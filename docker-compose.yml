@@ -1,0 +1,21 @@
+services:
+  genesis-core:
+    build:
+      context: .
+      target: builder # (Optional) Se oprește la prima etapă dacă ai multi-stage
+    volumes:
+      - ./app:/usr/src/app
+      - ./registry:/usr/src/registry
+      - /usr/src/app/node_modules # Protejează modulele din container să nu fie suprascrise de cele locale
+    command: npm run dev
+    environment:
+      - NODE_ENV=development
+    networks:
+      - genesis_network
+
+volumes:
+  qdrant_data:
+
+networks:
+  genesis_network:
+    driver: bridge

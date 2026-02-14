@@ -1,0 +1,17 @@
+services:
+  genesis-core:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: always
+    environment:
+      - NODE_ENV=production
+    networks:
+      - genesis_network
+
+volumes:
+  qdrant_data:
+
+networks:
+  genesis_network:
+    driver: bridge
