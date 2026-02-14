@@ -9,6 +9,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+      - name: Create .env file
+        run: |
+          echo "${{ secrets.ENV_FILE }}" > app/.env
       - name: Build and Restart Docker
         run: |
           docker compose -f docker-compose.prod.yml up -d --build

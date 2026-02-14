@@ -24,8 +24,8 @@ FROM node:20-slim
 WORKDIR /usr/src/app
 
 # 2. Copiem DOAR ce e necesar pentru rulare
-COPY --from=builder /usr/src/app/package*.json ./app
-COPY --from=builder /usr/src/app/dist ./app/dist
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/dist ./dist
 
 # 3. Instalăm doar dependențele de runtime (fără typescript, tsx, etc.)
 RUN npm install --omit=dev
