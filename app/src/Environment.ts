@@ -6,8 +6,8 @@ dotenv.config();
 const EnvironmentSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   OLLAMA_HOST_LOCAL: z.url({ message: "Trebuie să fie un URL valid pentru OLLAMA" }),
-  QDRANT_URL: z.url({ message: "Trebuie să fie un URL valid pentru Qdrant" }),
   DISCORD_API_KEY: z.string().min(10, { message: "API_KEY e prea scurtă" }),
+  PORT: z.string({message: "Trebuie să fie un număr de port valid pentru Express"})
 });
 
 export type IEnvironment = z.infer<typeof EnvironmentSchema>;
