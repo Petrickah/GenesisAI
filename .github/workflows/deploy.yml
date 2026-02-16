@@ -26,9 +26,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Run Deploy Script
         run: |
+          cd app
           npm install
           npx ts-node src/scripts/nexus-deploy.ts
         env:
-          DB_URL: "http://localhost:8000/rpc" # Merge local!
-          DB_USER: "root"
-          DB_PASS: "root"
+          SURREALDB_URL: "http://localhost:8000/rpc" # Merge local!
