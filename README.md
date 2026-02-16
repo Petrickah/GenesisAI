@@ -7,7 +7,7 @@
 
 GenesisAI is a technological framework created to solve the "Narrative Contextual Drift" of LLM (Large Language Models). In environments where the lore becomes too dense to be manually managed, GenesisAI uses a Domain Specific Language (DSL) based on sigils / tokens to transform the complex lore descriptions into immutable graph-based data structures.
 
-Inspired by Krakoan Language (Marvel X-Men Series written by Jonathan Hickman) and Wuxing Mythology, this projects allows an LLM to "think" in entity terms (Multi-Agent Personas like Phoenix Force/Zhuque, Xuanwu, or in-lore characters) and store them in a SurrealDB based Knowledge Database as interconnected nodes (a Knowledge Graph).
+Inspired by Krakoan Language (Marvel X-Men Series written by Jonathan Hickman) and Wuxing Mythology, this project allows an LLM to "think" in entity terms (Multi-Agent Personas like Phoenix Force/Zhuque, Xuanwu, or in-lore characters) and store them in a Knowledge Database based on SurrealDB as interconnected nodes (a Knowledge Graph).
 
 ## 🧱 Why do we need this framework?
 
@@ -19,55 +19,55 @@ The GenesisAI project introduces something called as "Semantical Determinism". I
 
 ### The control mechanism
 
-The system is not just a way to write prompts (pure Prompt Engineering), but a way for data governance. Using SurrealDB we transform the complex lore from a simple list of facts to a living network of knowledge, where every entity ha a unique signature and an immutable logic.
+This system is not just a way to write prompts (Prompt Engineering), but a way for data governance. Using SurrealDB we transform the complex lore from a simple list of facts to a living network of knowledge, where every entity has a unique signature and an immutable logic.
 
 ## 🔣 The Cypher Codex (The Technical Specification of Tokens)
 
-The Domain Specific Language (DSL) used in GenesisAI, called Krakoa Nexus DSL, uses a series of semantic tokens that acts as instructions for a parser. The scope of it is to generate prompts that contains only the necessary information for the LLM to generate responses, thus, preventing LLM Confunsion (loss of direction). These are split into three categories: **Structure**, **Relationships** and **Execution**.
+The Domain Specific Language (DSL) used in GenesisAI, called Krakoa Nexus DSL, uses a series of semantic tokens that acts as instructions for a parser. The scope of it is to generate prompts that contains only the necessary information for the LLM to generate responses, thus, preventing LLM Confunsion (loss of direction). These are split into four categories: **Structural Tokens**, **Logic & Property Tokens**, **Relational Tokens** and **Execution & Validation Tokens**.
 
-### 🔣 The Cypher Codex: Functional Categories
+### 🔣 Functional Categories
 
 #### **1. Structural Tokens (The Skeleton)**
 
 | **Token** | **Type** | **Description** |
 | ---- | ---- | ---- |
-| **📑** | **(FRAGMENT)** | Base Knowledge unity (a Document/RAG Entry). |
-| **🧠** | **(CONCEPT)** | Abstract idea or a in Universe Rule. |
-| **👤** | **(ENTITY)** | The primary actor (a Character or Organization). |
-| **📦** | **(COLLECTION)** | A bundle of entities, fragments or concepts. (ex: "The X-Men"). |
+| **📑** | **(FRAGMENT)** | Base Knowledge Unity (a Document/RAG Entry). |
+| **🧠** | **(CONCEPT)** | An Abstract Idea or an In-Universe Rule. |
+| **👤** | **(ENTITY)** | The Primary Actor (a Character or Organization). |
+| **📦** | **(COLLECTION)** | A Bundle of Entities, Fragments or Concepts. (ex: "The X-Men"). |
 
 #### **2. Logic & Property Tokens (The DNA)**
 
 | **Token** | **Type** | **Description** |
 | ---- | ---- | ---- |
-| **🧬** | **(LOGIC)** | Attributes, abilities, source rules ("Business Rules"). The behavior of an AI Agent |
-| **🔓** | **(ASSET)** | Objects, artifacts (ex: Zhuque Fans), resources, etc. (In-Universe Things) |
+| **🧬** | **(LOGIC)** | Fixed Attributes, Abilities, Source Rules ("Business Rules"). Defines the behavior of an AI Agent |
+| **🔓** | **(ASSET)** | Objects, Artifacts (ex: Zhuque Fans), Resources, etc. (In-Universe Things) |
 | **📌** | **(STATE)** | States / Variable Values (Ex: Temperature, HP, Status, Locations) |
 | **🔑** | **(TAG)** | Metadata used for fast indexation and data retrieval. |
-| **🧩** | **(STANCE)** | The overall and variable behavior of an Agent. It can change overtime. |
-| **⌛** | **(TIME)** | The timestamp at which the action takes place in. |
+| **🧩** | **(STANCE)** | The Overall and Variable Behavior of an Agent. It can change depending on the context. |
+| **⌛** | **(TIME)** | The Timestamp at which the Action takes place in. |
 
 #### **3. Relational Tokens (The Graph)**
 
 | **Token** | **Type** | **Description** |
 | ---- | ---- | ---- |
-| **🔗** | **(LINK)** | A general relationship (a Knowledge Graph Edge) |
-| **🔱** | **(AUTHORITY)** | An hierarchical relationship (a Master/Slave, Parent/Child) |
-| **🤝** | **(ALLIANCE)** | A cooperation relationship or a group affiliation (ex. Orchis, X-Men, Overwatch, Talon) |
-| **⚔️** | **(CONFLICT)** | An rivalry relationship or a restriction (Incompatible with...) |
+| **🔗** | **(LINK)** | A General Relationship (a Knowledge Graph Edge) |
+| **🔱** | **(AUTHORITY)** | An Hierarchical Relationship (a Master/Slave, Parent/Child) |
+| **🤝** | **(ALLIANCE)** | A Cooperation Relationship or a Group Affiliation (ex. Orchis, X-Men, Overwatch, Talon) |
+| **⚔️** | **(CONFLICT)** | An Rivalry Relationship or a Restriction (Incompatible with...) |
 
 #### **4. Execution & Validation (The Pulse)**
 
 | **Token** | **Type** | **Description** |
 | ---- | ---- | ---- |
-| **➔** | **(TRIGGER)** | The entrypoint of an action or logical path. |
-| **⚓** | **(ANCHOR)** | The absolute truth (Single Source of Truth). It can't be altered by the AI Agent |
-| **📡** | **(SIGNAL)** | An event broadcast which changes the current global context. |
-| **💬** | **(COMM)** | A communication interface between the user or the agents. |
+| **➔** | **(TRIGGER)** | The Entrypoint of an Action or Logical Path. |
+| **⚓** | **(ANCHOR)** | The Absolute Truth (Single Source of Truth). It can't be altered by the AI Agent |
+| **📡** | **(SIGNAL)** | An Event Broadcast which changes the current global context. |
+| **💬** | **(COMM)** | A Communication Interface between the user or the agents. |
 
 ### 💻 Reference Implementation (The Wade Example)
 
-To be sure the data integrity is maintained we use a refference implementation. In the following example, an AI Agent called Wade Wilson (Deadpool) takes the behavior defined in a based template, while the Wuyang (from the video game called Overwatch, by Blizzard Entertainment) agent acts as a system monitor to alert the overreaction of Deadpool agent. ("logical overheating")
+To be sure the data integrity is maintained we use a reference implementation. In the following example, an AI Agent called Wade Wilson (Deadpool) takes the behavior defined in a based template, while Wuyang (from the video game called Overwatch, by Blizzard Entertainment) Agent acts as a system monitor to alert the overreaction of Deadpool agent. ("logical overheating")
 
 ```krakoa
 ➔ 🧠(title: "Thermal Logic Validation", id: "NEX-SYS-THERM") [
@@ -114,13 +114,13 @@ To be sure the data integrity is maintained we use a refference implementation. 
 
 * [x] Configuring the development environment (Node.js + TypeScript + Docker + SurrealDB + Ollama)
 * [x] Finalizing the DSL Specification (The Cypher Codex)
-* [ ] Mapping the initial schemas in SurrealDB
+* [ ] Implementing the parser using a Pushdown Automaton (PDA) using TypeScript.
 
 ### **2nd Week: The Parsing Engine (The Compiler)**
 
-* [ ] Implementing the parser using a Pushdown Automaton (PDA) using TypeScript.
 * [ ] Transpiling the tokens into JSON structured objects for SurrealDB.
 * [ ] The syntactic validation of the `.krakoa` scripts.
+* [ ] Mapping the final schemas in SurrealDB
 
 ### **3rd Week: Integrating with SurrealDB (The Ledger)**
 
