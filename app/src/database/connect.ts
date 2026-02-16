@@ -15,7 +15,7 @@ async function main() {
         }) as RootAuth);
 
         // Selectăm Namespace-ul și Baza de Date pentru GenesisAI
-        await db.use({ namespace: 'genesis_nexus', database: 'krakoa_lore' });
+        await db.use({ namespace: 'genesis_nexus', database: 'lore' });
 
         console.log("✅ Conexiune stabilită: GenesisAI este online în SurrealDB!");
     } catch (e) {
