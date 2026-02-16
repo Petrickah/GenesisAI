@@ -1,11 +1,12 @@
 import { Surreal, type RootAuth } from 'surrealdb';
+import { env } from '../Environment.js';
 
 const db = new Surreal();
 
 async function main() {
     try {
         // Conectare la endpoint-ul Docker
-        await db.connect('http://0.0.0.0:8000/rpc');
+        await db.connect(`${env.SURREALDB_IP}`);
 
         // Autentificare (folosind datele din docker-compose)
         await db.signin(({

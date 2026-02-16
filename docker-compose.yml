@@ -15,17 +15,6 @@ services:
     networks:
       - genesis_network
 
-  surrealdb:
-    image: surrealdb/surrealdb:latest
-    container_name: genesis_surrealdb
-    user: root
-    command: start --user root --pass root --bind 0.0.0.0:8000 rocksdb:/data/genesis.db
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./surrealdata:/data # Mapăm un folder local pentru persistență (opțional)
-    restart: always
-
 networks:
   genesis_network:
     driver: bridge
