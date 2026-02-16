@@ -137,3 +137,6 @@ dist
 
 # registry files
 registry/
+
+# surrealdb files
+surrealdata/
