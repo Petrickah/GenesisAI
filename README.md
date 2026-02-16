@@ -9,6 +9,8 @@ GenesisAI is a technological framework created to solve the "Narrative Contextua
 
 Inspired by Krakoan Language (Marvel X-Men Series written by Jonathan Hickman) and Wuxing Mythology, this projects allows an LLM to "think" in entity terms (Multi-Agent Personas like Phoenix Force/Zhuque, Xuanwu, or in-lore characters) and store them in a SurrealDB based Knowledge Database as interconnected nodes (a Knowledge Graph).
 
+---
+
 ## 🧱 Why do we need this framework?
 
 ### The Idea I propose
@@ -20,3 +22,112 @@ The GenesisAI project introduces something called as "Semantical Determinism". I
 ### The control mechanism
 
 The system is not just a way to write prompts (pure Prompt Engineering), but a way for data governance. Using SurrealDB we transform the complex lore from a simple list of facts to a living network of knowledge, where every entity ha a unique signature and an immutable logic.
+
+---
+
+### 🔣 The Cypher Codex (The Technical Specification of Tokens)
+
+The Domain Specific Language (DSL) used in GenesisAI, called Krakoa Nexus DSL, uses a series of semantic tokens that acts as instructions for a parser. The scope of it is to generate prompts that contains only the necessary information for the LLM to generate responses, thus, preventing LLM Confunsion (loss of direction). These are split into three categories: **Structure**, **Relationships** and **Execution**.
+
+**Key Elements:**
+
+* **📑 (Fragment):** The entry point of a document of knowledge for RAG (Retrieval Augmented Generation).
+* **🧠 (Concept):** Defines an abstract idea or a in universe rule.
+* **👤 (Entity):** Defines a new character or a base template for multiple characters.
+* **🧬 (Logic):** Defines the code based on which the entity lives by. In prompt, the data beccomes the abilities and the rules the LLM acts by (the business rules).
+* **🔗 (Link):** Creates a new relationship between two nodes in the Knowledge Graph.
+* **⚓ (Anchor):** Acts as a validation anchor (assert) which must be true. It's an reality check for the AI Agent.
+* **📡 (Signal):** Represents an event that tells the system something was changed (for example, the context of discussion, or an environmental change).
+
+---
+
+### 💻 Etapa 4: Reference Implementation (The Wade Example)
+
+To be sure the data integrity is maintained we use a refference implementation. In the following example, an AI Agent called Wade Wilson (Deadpool) takes the behavior defined in a based template, while the Wuyang (from the video game called Overwatch, by Blizzard Entertainment) agent acts as a system monitor to alert the overreaction of Deadpool agent. ("logical overheating")
+
+```krakoa
+➔ 🧠(title: "Thermal Logic Validation", id: "NEX-SYS-THERM") [
+    // 1. ASSET DEFINITION: The Zhuque Fans (Zhuque 朱雀)
+    🔓(ASSET: "Zhuque_Fans", id: "ANR-AST-FAN") [
+        🔑[#ThermalArtifact, #FireElement];
+        🧬(logic: "MYSTIC_HEAT") ["Capable of generating intense semantic heat."];
+    ];
+
+    // 2. TEMPLATE DEFINITION
+    👤(TEMPLATE: "Base_Mercenary", id: "WADE_BASE") [
+        🧬(logic: "CHAOS_MODE") ["High unpredictability and meta-awareness."];
+    ];
+
+    // 3. AGENT INSTANCE: Wade Wilson
+    ➔ 👤(AGENT: "Wade_Wilson", id: "NEX-AGT-WADE") [
+        🔗(type: "Inheritance") [ #NEX-AGT-WADE :: #WADE_BASE ];
+        📌(set: "Action", value: "Grilling_with_Zhuque_Fans");
+
+        // The logic that triggers the system overheat
+        ➔ 🧬(op: "OVERCLOCK_HEAT") [ @ANR-AST-FAN ];
+        
+        // Signal emitted for the system listeners
+        📡(event: "THERMAL_SPIKE", value: "95°C");
+    ];
+
+    // 4. SYSTEM MONITOR: Wuyang (Xuanwu 玄武)
+    ➔ 👤(AGENT: "Wuyang", id: "NEX-AGT-WUYA") [
+        // The Anchor acts as an automated Reality Check
+        ⚓(condition: "@NEX-AGT-WADE::Temperature > 90°C") [
+            🧬(mode: "XUANWU_STABILIZATION") [ "Deploying mystical coolant to prevent system crash." ];
+            
+            ➔ 💬(type: "Alert", to: "ARCHITECT") [
+                📂(content: "Status") [ "Wade is burning the kernel again. Stabilization active." ];
+            ];
+        ];
+    ];
+];
+```
+
+---
+
+### 🗺️ One month Roadmap (The Genesis Phase)
+
+#### **1st Week: Defining the lexicon and grammar**
+
+* [x] Configuring the development environment (Node.js + TypeScript + Docker + SurrealDB + Ollama)
+* [-] Finalizing the DSL Specification (The Cypher Codex)
+* [-] Mapping the initial schemas in SurrealDB
+
+#### **2nd Week: The Parsing Engine (The Compiler)**
+
+* [-] Implementing the parser using a Pushdown Automaton (PDA) using TypeScript.
+* [-] Transpiling the tokens into JSON structured objects for SurrealDB.
+* [-] The syntactic validation of the `.krakoa` scripts.
+
+#### **3rd Week: Integrating with SurrealDB (The Ledger)**
+
+* [-] Building the active connection between the Parser and the Database.
+* [-] Implementing the "Inheritance" logic and "Graph Linking" directly into SurrealQL.
+* [-] Testing the first complex entities (Anran & Wuyang) with persistent relationships.
+
+#### **4th Week: AI Interface (The Intelligence)**
+
+* [-] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to adapt their answers based on the Krakoa Nexus DSL definitions.
+* [-] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to write JSON Objects based on the Intermediate Representation (IR) of Krakoa Nexus DSL.
+* [-] Testing the first close loop: Prompt -> DSL IR -> SurrealDB -> Context RAG.
+* [-] Testing the first interaction with an AI Agent.
+
+---
+
+### 🏁 Conclusion
+
+> _"GenesisAI isn't just an experiment, is a conceptual framework for creative anchoring of LLMs via mathematical structuring. In an technical era of Generative Artificial Intelligence, the true power doesn't resides into generating more text, but in holding the **control over the knowledge**."_
+
+---
+
+### ⚠️ A Note on the DSL Purpose (Human-to-Machine Bridge)
+
+It is vital to distinguish the role of the **Krakoa Nexus DSL**.
+Contrary to popular belief in prompt engineering, the LLM is **NOT** required to write in the DSL itself. Instead:
+
+1. **Human Perspective:** The DSL is for **us, the Architects**. It allows us to define complex agents, lore, and logic using a compact, semantic syntax without the overhead of manual Prompt Engineering or verbose JSON writing.
+2. **AI Perspective:** The LLM is instructed to output **JSON Objects** based on the DSL's _Intermediate Representation (IR)_.
+3. **The Result:** The DSL acts as a high-level "Source Code" that humans write, which then gets compiled/transpiled into a format that the LLM understands and the Database (SurrealDB) can ingest.
+
+> _"We don't ask the AI to be a poet; we ask it to be a Data Modeler. The DSL is the blueprint we provide to ensure it doesn't lose its way."_
