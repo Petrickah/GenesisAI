@@ -1,12 +1,11 @@
 import { Surreal } from 'surrealdb';
 import fs from 'fs';
 import path from 'path';
-import { env } from '../Environment.js';
 
 async function deploy() {
     const db = new Surreal();
     try {
-        await db.connect(`${env.SURREALDB_URL}`);
+        await db.connect(`${process.env.SURREALDB_URL}`);
         await db.signin({ username: 'root', password: 'root' });
         await db.use({ namespace: 'genesis_nexus', database: 'krakoa_lore' });
 

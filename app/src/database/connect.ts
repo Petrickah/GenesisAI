@@ -1,12 +1,11 @@
 import { Surreal } from 'surrealdb';
-import { env } from '../Environment.js';
 
 const db = new Surreal();
 
 async function main() {
     try {
         // Conectare la endpoint-ul Docker
-        await db.connect(`${env.SURREALDB_URL}`);
+        await db.connect(`${process.env.SURREALDB_URL}`);
 
         // Autentificare (folosind datele din docker-compose)
         await db.signin({
