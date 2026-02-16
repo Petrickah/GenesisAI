@@ -8,7 +8,7 @@ const EnvironmentSchema = z.object({
   OLLAMA_HOST_LOCAL: z.url({ message: "Trebuie să fie un URL valid pentru OLLAMA" }),
   DISCORD_API_KEY: z.string().min(10, { message: "API_KEY e prea scurtă" }),
   PORT: z.string({message: "Trebuie să fie un număr de port valid pentru Express"}),
-  SURREALDB_IP: z.url({ message: "Trebuie să fie un URL valid pentru SurrealDB" }),
+  SURREALDB_URL: z.url({ message: "Trebuie să fie un URL valid pentru SurrealDB" }),
 });
 
 export type IEnvironment = z.infer<typeof EnvironmentSchema>;

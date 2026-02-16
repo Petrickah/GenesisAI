@@ -8,15 +8,27 @@ jobs:
     runs-on: self-hosted
     environment: ENV_FILE
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Create .env file
         run: |
           # Acum GitHub va injecta automat variabilele din ENV_FILE aici
           echo "PORT=${{ vars.PORT }}" >> .env
-          echo "SURREALDB_IP=${{ vars.SURREALDB_IP }}" >> .env
+          echo "SURREALDB_IP=${{ vars.SURREALDB_URL }}" >> .env
           echo "OLLAMA_HOST_LOCAL=${{ vars.OLLAMA_HOST_LOCAL }}" >> .env
           echo "DISCORD_API_KEY=${{ secrets.DISCORD_API_KEY }}" >> .env
       - name: Build and Restart Docker
         run: |
           docker compose -f docker-compose.prod.yml up -d --build
+
+  deploy-schema:
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Deploy Script
+        run: |
+          npm install
+          npx ts-node src/scripts/nexus-deploy.ts
+        env:
+          DB_URL: "http://localhost:8000/rpc" # Merge local!
+          DB_USER: "root"
+          DB_PASS: "root"
