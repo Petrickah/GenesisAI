@@ -1,6 +1,6 @@
 -- 1. SETUP NAMESPACE & DATABASE
-DEFINE NAMESPACE genesis_nexus;
-DEFINE DATABASE lore;
+-- DEFINE NAMESPACE genesis_nexus;
+-- DEFINE DATABASE lore;
 
 -- ==========================================
 -- GENESIS AI: KRAKOA NEXUS SCHEMA (V1.0)
