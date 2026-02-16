@@ -1,8 +1,7 @@
 import express from 'express';
-import { env } from './Environment.js';
 
 const app = express();
-const PORT = env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
 
