@@ -13,7 +13,7 @@ jobs:
         run: |
           # Acum GitHub va injecta automat variabilele din ENV_FILE aici
           echo "PORT=${{ vars.PORT }}" >> .env
-          echo "SURREALDB_IP=${{ vars.SURREALDB_URL }}" >> .env
+          echo "SURREALDB_URL=${{ vars.SURREALDB_URL }}" >> .env
           echo "OLLAMA_HOST_LOCAL=${{ vars.OLLAMA_HOST_LOCAL }}" >> .env
           echo "DISCORD_API_KEY=${{ secrets.DISCORD_API_KEY }}" >> .env
       - name: Build and Restart Docker
