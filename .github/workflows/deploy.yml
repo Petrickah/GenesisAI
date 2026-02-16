@@ -27,7 +27,7 @@ jobs:
       - name: Run Deploy Script
         run: |
           cd app
-          npm install
-          npx ts-node src/database/deploy.ts
+          npm install & npm run build
+          node dist/database/deploy.js
         env:
           SURREALDB_URL: "http://localhost:8000/rpc" # Merge local!
