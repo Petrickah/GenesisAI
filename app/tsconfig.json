@@ -19,6 +19,8 @@
     // and npm install -D @types/node
     
     // Other Outputs
+    "allowJs": true,
+    "resolveJsonModule": true,
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
