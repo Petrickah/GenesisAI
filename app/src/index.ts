@@ -1,26 +1,19 @@
-import express from 'express';
+import parser from "./grammar/grammar.cjs";
+import { KrakoaProgramSchema } from "./schema/krakoa.schema.js";
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+const rawCode = `👤 ("Wade Wilson") [mutant] { 🛡️ (STANCE) [defensive]; }`;
 
-app.use(express.json());
+try {
+  // 1. Parsare (transformă string în obiecte "any")
+  const rawAst = parser.parse(rawCode);
 
-app.get('/status', (req, res) => {
-    res.json({
-        status: 'online',
-        agent: 'Wade Wilson',
-        platform: 'Mac Mini M4 Pro',
-        message: 'Unde sunt micii, Tibi?'
-    });
-});
+  // 2. Validare (Zod verifică dacă obiectele respectă regulile și le dă TIPURI)
+  const program = KrakoaProgramSchema.parse(rawAst);
 
-app.post('/execute', (req, res) => {
-    const { instructions } = req.body;
-    console.log('Primind instrucțiuni LEGO:', instructions);
-    // Aici va veni Runner-ul tău de VM
-    res.json({ success: true, executed: instructions?.length || 0 });
-});
-
-app.listen(PORT, () => {
-    console.log(`🚀 Genesis Server pornit pe portul ${PORT}`);
-});
+  // Acum 'program' este perfect tipizat!
+  console.log("💎 Program validat:", program[0].id); 
+  
+} catch (e) {
+  // Aici gestionezi ori eroarea de la Peggy, ori cea de la Zod
+  console.error("❌ Validarea a eșuat:", e);
+}
