@@ -1,26 +1,40 @@
-import express from 'express';
+import readline from 'node:readline';
+import { createRequire } from 'module';
 
-const app = express();
-const PORT = process.env.PORT || 3000;
+// Creăm o funcție require care funcționează chiar și în ESM
+const require = createRequire(import.meta.url);
 
-app.use(express.json());
+function getParser() {
+  const grammarPath = require.resolve('./grammar/grammar.cjs');
+  
+  // În Node.js modern, delete require.cache merge doar dacă fișierul e .cjs
+  delete require.cache[grammarPath];
+  
+  return require(grammarPath);
+}
 
-app.get('/status', (req, res) => {
-    res.json({
-        status: 'online',
-        agent: 'Wade Wilson',
-        platform: 'Mac Mini M4 Pro',
-        message: 'Unde sunt micii, Tibi?'
-    });
+const rl = readline.createInterface({
+  input: process.stdin,
+  output: process.stdout,
+  prompt: 'GENESIS> '
 });
 
-app.post('/execute', (req, res) => {
-    const { instructions } = req.body;
-    console.log('Primind instrucțiuni LEGO:', instructions);
-    // Aici va veni Runner-ul tău de VM
-    res.json({ success: true, executed: instructions?.length || 0 });
-});
+console.log("🛠️ GenesisAI REPL - Modul 'Hot Grammar' Activat");
+rl.prompt();
 
-app.listen(PORT, () => {
-    console.log(`🚀 Genesis Server pornit pe portul ${PORT}`);
+rl.on('line', (line) => {
+  if (line.trim() === '.reload') {
+    console.log("♻️  Reîncărcăm gramatica...");
+    rl.prompt();
+    return;
+  }
+
+  try {
+    const parser = getParser(); // Luăm versiunea curentă a gramaticii
+    const ast = parser.parse(line);
+    console.log(JSON.stringify(ast, null, 2));
+  } catch (e: any) {
+    console.error(`❌ Eroare: ${e.message}`);
+  }
+  rl.prompt();
 });

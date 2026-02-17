@@ -1,4 +1,7 @@
 import { Surreal } from 'surrealdb';
+import * as dotenv from 'dotenv'
+
+dotenv.config();
 
 const db = new Surreal();
 
