@@ -6,6 +6,7 @@
   "main": "src/dist/index.js",
   "scripts": {
     "build": "tsc --outDir dist",
+    "build:grammar": "npx peggy --format commonjs --output src/grammar/grammar.cjs src/grammar/grammar.pegjs",
     "start": "tsx src/index.ts",
     "dev": "tsx watch src/index.ts"
   },
@@ -32,6 +33,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.19.31",
     "@types/pg": "^8.16.0",
+    "peggy": "^5.0.6",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }
