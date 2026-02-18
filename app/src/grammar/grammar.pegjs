@@ -1,81 +1,116 @@
 {{
-  function buildNode(type, header, tags, body) {
+  function buildNode(type, tags, body, params, metadata) {
     return {
       type: type,
-      id: header.id,
-      params: header.params || {},
-      tags: tags || [],
-      children: body || [],
-      timestamp: Date.now()
+      body: body,
+      tags: tags,
+      params: params,
+      metadata: {
+        ...metadata,
+        timestamp: Date.now()
+      }
     };
   }
 }}
 
-// --- REGULI DE START ---
-
 Start
-  = _ instructions:Instruction* { return instructions; }
+  = _ instructions:(Expression)* _ { return instructions; }
 
 Instruction
-  = type:Emoji _ header:Header _ tags:ValueList? _ body:Body? _ ";"? _ {
-      return buildNode(type, header, tags, body);
-    }
+  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";" _ { 
+    return buildNode("INSTRUCTION", tags, body || [], { ...params }, { ...symbol.metadata });
+  }
 
-// --- STRUCTURĂ ---
+TagList
+  = _ "🔑" _ "[" head:Tag tail:(_ "," _ Tag)* _ "]" _ {
+    const tags = [head.value];
+    tail.forEach(element => {
+      const tag = element[3];
+      tags.push(tag.value);
+    })
+    return tags;
+  }
 
-Header
-  = "(" _ main:HeaderMain _ params:ParamListItem* _ ")" {
-      return { id: main, params: Object.fromEntries(params) };
-    }
+Tag
+  = "#" id:Identifier {
+    return { type: "TAG", value: id };
+  }
 
-HeaderMain
-  = QuotedString
+ReferencePath
+  = ref:Reference "::" members:(PathMember / MemberSelection) {
+    return { type: "PATH", root: ref.id, members: members };
+  }
+
+MemberSelection
+  = "[" _ head:PathMember tail:(_ "," _ PathMember)* _ "]" {
+    return [head, ...tail.map(t => t[3])];
+  }
+  / member:PathMember { return [member]; }
+
+PathMember
+  = ReferencePath
+  / Reference
   / Identifier
 
-ParamListItem
-  = "," _ key:Identifier _ ":" _ val:Value { return [key, val]; }
+Reference
+  = "@" id:Identifier {
+    return { type: "REFERENCE", id: id };
+  }
 
-ValueList
-  = "[" _ items:ValueSequence? _ "]" { return items || []; }
+ActionPath
+  = source:(ReferencePath / Reference / Instruction)? _ op:("➔" / "->") _ target:(ReferencePath / Reference / Instruction) _ ";" _ {
+    return buildNode("ACTION_TRIGGER", [], [], { from: source || undefined, to: target }, { value: op, known: true });
+  }
 
-ValueSequence
-  = first:Value _ rest:("," _ Value)* {
-      return [first, ...rest.map(r => r[2])];
-    }
+ParameterList
+  = _ "(" _ head:Identifier tail:(_ "," _ Parameter)* _ ")" _ {
+    const params = { id: head };
+    tail.forEach(element => {
+      const p = element[3];
+      Object.assign(params, p);
+    });
+    return params;
+  }
+
+Parameter
+  = _ label:Identifier ":" value:String {
+    return { [label]: value }
+  }
 
 Body
-  = "{" _ children:Instruction* _ "}" { return children; }
+  = _ "{" instructions:(Expression)* "}" _ {
+    return instructions;
+  }
 
-// --- ATOMI (TERMINALS) ---
+Symbol 
+  = KnownTotem 
+  / GenericEmoji
 
-Emoji "Emoji"
-  = _ symbol:UnicodeCluster _ { return symbol; }
+KnownTotem
+  = icon:("📑" / "🧠" / "👤" / "📦" / "🧬" / "🔓" / "📌" / "🧩" / "⌛" / "⚖️" / "🔗" / "🔱" / "🤝" / "⚔️") { 
+      return buildNode("TOTEM", {}, [], {}, { value: icon, known: true }); 
+    }
 
-// Această regulă prinde Emoji-uri de 2, 3 sau mai multe unități (ex: 🛡️, 👨‍👩‍👧‍👦)
-UnicodeCluster
-  = chars:UnicodeComponent+ { return chars.join(""); }
+GenericEmoji
+  = char:$([^\s\w\(\)\[\]\{\};,:][\uFE00-\uFE0F]?) {
+      return buildNode("TOTEM", {}, [], {}, { value: char, known: false });
+    }
 
-UnicodeComponent
-  = $([\uD800-\uDBFF][\uDC00-\uDFFF]) // Perechi surogate (👤)
-  / [\u2000-\u3300]                  // Simboluri diverse și pictograme
-  / [\uFE00-\uFE0F]                  // Variation Selectors (Ceea ce lipsea la 🛡️!)
-  / [^\s\w\(\)\[\]\{\};,:]            // Orice alt simbol special
+Identifier
+  = String
+  / $([a-zA-Z0-9_]+)
 
-Identifier "Identifier"
-  = chars:[a-zA-Z0-9_]+ { return chars.join(""); }
+Expression
+  = _ el:(ActionPath / Instruction / ReferencePath / Reference) _ ";"? _ {
+    return el;
+  }
 
-QuotedString "String"
-  = "\"" text:[^\"]* "\"" { return text.join(""); }
+TextContent
+  = $((!"\"" .)*)
 
-Number "Number"
-  = digits:[0-9]+ { return parseInt(digits.join(""), 10); }
+String
+  = _ "\"" text:TextContent "\"" _ { return text; }
 
-Value "Value"
-  = QuotedString
-  / Number
-  / Identifier
-
-// Whitespace & Comentarii - Esențiale pentru a nu bloca Emoji-ul
 _ "Whitespace"
   = ([ \t\n\r] / Comment)*
 

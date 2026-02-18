@@ -7,7 +7,7 @@
   "scripts": {
     "build": "tsc --outDir dist",
     "build:grammar": "npx peggy --format commonjs --output src/grammar/grammar.cjs src/grammar/grammar.pegjs",
-    "start": "tsx src/index.ts",
+    "start": "tsx src/index.ts --repl",
     "watch": "tsx watch src/index.ts",
     "watch:grammar": "chokidar \"src/grammar/grammar.pegjs\" -c \"npm run build:grammar\""
   },
@@ -34,7 +34,6 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.19.31",
     "@types/pg": "^8.16.0",
-    "chokidar-cli": "^3.0.0",
     "peggy": "^5.0.6",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
