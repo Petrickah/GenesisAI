@@ -20,26 +20,45 @@ const SNIPPETS: Record<string, string> = {
   ":go": "➔",
 };
 
+let currentParser: any = null;
 const ALIASES = Object.keys(SNIPPETS);
 
 function startSystem() {
   let isBuilding = false;
+  let currentREPL: readline.Interface | undefined = undefined;
 
   const launch = () => {
     const args = process.argv.slice(2);
 
     if (args.includes('--repl')) {
       console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
-      launchREPL();
+      return launchREPL();
     } else {
       console.log("--- 🌐 GENESIS HEADLESS MODE (SERVER) ---");
       launchServer();
     }
   }
 
+  const loadParser = (readline?: readline.Interface) => {
+    try {
+      delete require.cache[require.resolve(COMPILED_PATH)];
+      currentParser = require(COMPILED_PATH); // Actualizează variabila globală
+      console.log("✅ Grammar hot-swapped!");
+      if (readline) readline.prompt();
+    } catch (e) {
+      console.error("❌ Parser load error:", e);
+    }
+  };
+
   console.log("👁️  Watcher activated to update the grammar...");
+  loadParser();
+
+  if (!isBuilding) {
+    currentREPL = launch();
+  }
+
   chokidar.watch(GRAMMAR_PATH).on('change', () => {
-    console.log("\n🛠️ Change has been detected! Recompiling the grammar...");
+    console.log("\n🛠️ Recompiling the grammar...");
     isBuilding = true;
     exec('npm run build:grammar', (error, stdout, stderr) => {
       isBuilding = false;
@@ -49,23 +68,26 @@ function startSystem() {
         return;
       }
 
-      console.log(`✅ Grammar has been updated!`);
-      delete require.cache[require.resolve(COMPILED_PATH)];
-      launch();
+      console.clear();
+      console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
+      console.log("👁️  Watcher: Grammar updated and hot-swapped!");
+
+      loadParser(currentREPL);
     });
   });
-
-  return isBuilding
-    ? console.log("⚙️ Recompiling grammar...")
-    : launch()
-    ;
 }
 
 function execute(input: string) {
+  console.log("DEBUG: Input primit în engine:", `"${input}"`); // Ar trebui să apară imediat ce apeși Enter
+  
+  if (!currentParser) {
+    console.log("🧬 [System Error]: Creierul (Parserul) nu a fost încărcat!");
+    return;
+  }
+
   try {
-    const parser = require(COMPILED_PATH);
-    const ast = parser.parse(input);
-    console.log(JSON.stringify(ast, null, 2));
+    const ast = currentParser.parse(input);
+    console.log("DEBUG: ", JSON.stringify(ast, null, 2));
 
     const result = GENESIS_ENGINE.execute(ast);
     console.log(result);
@@ -75,7 +97,9 @@ function execute(input: string) {
   }
 }
 
-function launchREPL() {
+function launchREPL(): readline.Interface {
+  let multiLineBuffer = "";
+
   const rl = readline.createInterface({
     input: process.stdin,
     output: process.stdout,
@@ -90,8 +114,6 @@ function launchREPL() {
       return [hits.length ? hits : ALIASES, line];
     }
   });
-
-  let multiLineBuffer = "";
 
   rl.prompt();
   rl.on('line', (line) => {
@@ -113,13 +135,20 @@ function launchREPL() {
       return rl.prompt();
     }
 
-    if (finalInput === '.exit') {
-      return process.exit(0);
+    switch (finalInput) {
+      case '.exit':
+        return process.exit(0);
+      case '.clear':
+        console.clear();
+        console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
+        return rl.prompt();
     }
 
     execute(finalInput);
     rl.prompt();
   });
+
+  return rl;
 }
 
 function launchServer() {

@@ -13,16 +13,35 @@ export class GenesisEngine {
         this.agents.set("Anran", { name: "Anran Ye", hp: 120, stress: 10, inventory: ["Zhuque Fan"]});
     }
 
-    public execute(ast: any): string {
-        if (ast.type === 'action' && ast.action === 'attack') {
-            return this.handleAttack(ast.target, ast.value);
-        }
+    execute(ast: any[]) {
+        if (!Array.isArray(ast)) return "⚠️ [Engine Error]: AST invalid.";
         
-        if (ast.type === 'query' && ast.action === 'status') {
-            return this.getStatus(ast.target);
-        }
+        const logs: string[] = [];
 
-        return "🧬 [Logic Error]: Unknown command structure.";
+        ast.forEach(node => {
+            switch (node.type) {
+                case 'TOTEM':
+                    logs.push(this.handleTotem(node));
+                    break;
+                case 'UNKNOWN_SYMBOL':
+                    logs.push(`🏮 [Flavor]: Un simbol mistic apare: ${node.value}`);
+                    break;
+                default:
+                    logs.push(`🧬 [Logic Error]: Structură necunoscută (${node.type})`);
+            }
+        });
+
+        return logs.join('\n');
+    }
+
+    private handleTotem(node: any): string {
+        const mapping: Record<string, string> = {
+            "🧠": "Sistemul accesează Marele Plan (Concept Mode).",
+            "⚔️": "Wade Wilson își ascute săbiile (Combat Mode).",
+            "👤": "Un nou agent a fost detectat în perimetru."
+        };
+
+        return mapping[node.value] || `✨ Totemul ${node.value} strălucește, dar nu se întâmplă nimic.`;
     }
 
     private handleAttack(target: string, value: number): string {
