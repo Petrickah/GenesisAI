@@ -2,8 +2,10 @@ import chokidar from 'chokidar';
 import { exec } from 'child_process';
 import readline from 'node:readline';
 import { createRequire } from 'module';
+import { GenesisEngine } from './engine/GenesisEngine.js';
 
 const require = createRequire(import.meta.url);
+const GENESIS_ENGINE = new GenesisEngine();
 const GRAMMAR_PATH = './src/grammar/grammar.pegjs';
 const COMPILED_PATH = './grammar/grammar.cjs';
 
@@ -16,80 +18,112 @@ const SNIPPETS: Record<string, string> = {
   ":link": "🔗",
   ":anchor": "⚓",
   ":go": "➔",
-
-  // Snippets complexe (Structuri întregi)
-  ":newagent": "👤(Name) ➔ [ ⚙️(Task) ]",
-  ":newconcept": "🧠(ConceptName) { 🧬(logic: \"...\") }",
-  ":full": "👤(Wade) ➔ [ ⚙️(EatPizza) 🛡️(Aggressive) ]"
 };
 
-// Extragem cheile pentru autocompletare (ex: [":concept", ":agent", ...])
 const ALIASES = Object.keys(SNIPPETS);
 
-let isBuilding = false;
+function startSystem() {
+  let isBuilding = false;
 
-console.log("👁️ Watcher activated to update the grammar...");
+  const launch = () => {
+    const args = process.argv.slice(2);
 
-chokidar.watch(GRAMMAR_PATH).on('change', () => {
-  console.log("\n🛠️ Change has been detected! Recompiling the grammar...");
-  isBuilding = true;
-  exec('npm run build:grammar', (error, stdout, stderr) => {
-    isBuilding = false;
-
-    if (error) {
-      console.error(`❌ Build error: ${error.message}`);
-      return;
+    if (args.includes('--repl')) {
+      console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
+      launchREPL();
+    } else {
+      console.log("--- 🌐 GENESIS HEADLESS MODE (SERVER) ---");
+      launchServer();
     }
+  }
 
-    console.log(`✅ Grammar has been updated!`);
-    delete require.cache[require.resolve(COMPILED_PATH)];
-    rl.prompt();
+  console.log("👁️  Watcher activated to update the grammar...");
+  chokidar.watch(GRAMMAR_PATH).on('change', () => {
+    console.log("\n🛠️ Change has been detected! Recompiling the grammar...");
+    isBuilding = true;
+    exec('npm run build:grammar', (error, stdout, stderr) => {
+      isBuilding = false;
+
+      if (error) {
+        console.error(`❌ Build error: ${error.message}`);
+        return;
+      }
+
+      console.log(`✅ Grammar has been updated!`);
+      delete require.cache[require.resolve(COMPILED_PATH)];
+      launch();
+    });
   });
-});
 
-const rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  prompt: 'GENESIS> ',
-  completer: (line: string) => {
-    // Găsim dacă ceea ce am scris până acum se potrivește cu un început de alias
-    const hits = ALIASES.filter((a) => a.startsWith(line));
+  return isBuilding
+    ? console.log("⚙️ Recompiling grammar...")
+    : launch()
+    ;
+}
 
-    // Dacă avem o singură potrivire perfectă și apăsăm TAB
-    if (hits.length === 1 && line.length > 1) {
-       // Returnăm emoji-ul corespunzător. 
-       // Node va înlocui prefixul (ex: :con) cu valoarea (ex: 🧠)
-       return [[SNIPPETS[hits[0]!]], line];
-    }
-
-    // Dacă avem mai multe potriviri, le afișăm ca listă
-    return [hits.length ? hits : ALIASES, line];
-  }
-});
-
-console.log("🚀 GenesisAI Console Ready.");
-rl.prompt();
-
-rl.on('line', (line) => {
-  if (!line.trim() || isBuilding) {
-    console.log("⚙️ Empty line or still building the grammar...")
-    rl.prompt();
-    return;
-  }
-
-  if (line.trim().toLowerCase() === '.exit') {
-    console.log("👋 Good Bye!");
-    rl.close();
-    process.exit(0);
-  }
-
+function execute(input: string) {
   try {
     const parser = require(COMPILED_PATH);
-    const ast = parser.parse(line);
+    const ast = parser.parse(input);
     console.log(JSON.stringify(ast, null, 2));
+
+    const result = GENESIS_ENGINE.execute(ast);
+    console.log(result);
   } catch (e: any) {
-    console.error(`⚠️ Error: ${e.message}`);
+    console.error(`⚠️  Error: Invalid Krakoan Syntax at line ${e.location?.start.line || 0}:${e.location?.start.column || 0}`);
+    console.error(`⚠️  Message: ${e.message}`);
   }
+}
+
+function launchREPL() {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '>>> ',
+    completer: (line: string) => {
+      const hits = ALIASES.filter((a) => a.startsWith(line));
+
+      if (hits.length === 1 && line.length > 1) {
+        return [[SNIPPETS[hits[0]!]], line];
+      }
+
+      return [hits.length ? hits : ALIASES, line];
+    }
+  });
+
+  let multiLineBuffer = "";
 
   rl.prompt();
-});
+  rl.on('line', (line) => {
+    multiLineBuffer += line + "\n";
+
+    const openedBraces = (multiLineBuffer.match(/{/g) || []).length;
+    const closedBraces = (multiLineBuffer.match(/}/g) || []).length;
+
+    if (openedBraces > closedBraces) {
+      rl.setPrompt('... ');
+      return rl.prompt();
+    }
+
+    const finalInput = multiLineBuffer.trim();
+    multiLineBuffer = "";
+    rl.setPrompt('>>> ');
+
+    if (!finalInput) {
+      return rl.prompt();
+    }
+
+    if (finalInput === '.exit') {
+      return process.exit(0);
+    }
+
+    execute(finalInput);
+    rl.prompt();
+  });
+}
+
+function launchServer() {
+  console.log("The system runs in background...");
+}
+
+startSystem();
