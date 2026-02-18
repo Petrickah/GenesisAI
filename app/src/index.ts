@@ -87,10 +87,9 @@ function execute(input: string) {
 
   try {
     const ast = currentParser.parse(input);
-    console.log("DEBUG: ", JSON.stringify(ast, null, 2));
+    console.log(JSON.stringify(ast, null, 2));
 
-    const result = GENESIS_ENGINE.execute(ast);
-    console.log(result);
+    GENESIS_ENGINE.execute(ast);
   } catch (e: any) {
     console.error(`⚠️  Error: Invalid Krakoan Syntax at line ${e.location?.start.line || 0}:${e.location?.start.column || 0}`);
     console.error(`⚠️  Message: ${e.message}`);
@@ -105,13 +104,23 @@ function launchREPL(): readline.Interface {
     output: process.stdout,
     prompt: '>>> ',
     completer: (line: string) => {
-      const hits = ALIASES.filter((a) => a.startsWith(line));
+      // 1. Spargem linia în cuvinte/token-uri
+      const words = line.split(/\s+/);
+      // 2. Ne interesează doar ultimul cuvânt (cel pe care îl scrii acum)
+      const lastWord = words[words.length - 1] || "";
 
-      if (hits.length === 1 && line.length > 1) {
-        return [[SNIPPETS[hits[0]!]], line];
+      // 3. Filtrăm ALIASES pe baza ultimului cuvânt
+      const hits = ALIASES.filter((a) => a.startsWith(lastWord));
+
+      if (hits.length === 1 && lastWord.length > 1) {
+        // ⚠️ AICI E MAGIA: 
+        // Returnăm snippet-ul, dar readline are nevoie de "substring-ul" 
+        // care va fi înlocuit (lastWord), nu toată linia!
+        return [[SNIPPETS[hits[0]!]], lastWord];
       }
 
-      return [hits.length ? hits : ALIASES, line];
+      // Dacă sunt mai multe variante, le afișăm doar pentru ultimul cuvânt
+      return [hits.length ? hits : ALIASES, lastWord];
     }
   });
 
