@@ -114,7 +114,7 @@ To be sure the data integrity is maintained we use a reference implementation. I
 
 * [x] Configuring the development environment (Node.js + TypeScript + Docker + SurrealDB + Ollama)
 * [x] Finalizing the DSL Specification (The Cypher Codex)
-* [ ] Implementing the parser using a Pushdown Automaton (PDA) using TypeScript.
+* [X] Implementing the parser using a Pushdown Automaton (PDA/PEG/Peggy.js) using TypeScript.
 
 ### **2nd Week: The Parsing Engine (The Compiler)**
 
