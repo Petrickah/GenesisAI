@@ -1,3 +1,7 @@
+import parser from '../grammar/grammar.cjs';
+import { KrakoanNodeSchema } from '../schema/krakoa.schema.js';
+import { GraphManager } from './GraphManager.js';
+
 export interface AgentState {
     name: string;
     hp: number;
@@ -5,34 +9,12 @@ export interface AgentState {
     inventory: string[];
 }
 
-// GenesisEngine.ts
-export class GenesisEngine {
-  private activeMission: string | null = null;
-
-  execute(ast: any[]) {
-    ast.forEach(node => this.processNode(node));
-  }
-
-  private processNode(node: any) {
-    const { value } = node.metadata;
-    const { id, description } = node.params;
-
-    if (value === "🧠") {
-      this.activeMission = id;
-      console.log(`\n[SYSTEM]: 🧠 Concept Activat: "${id}"`);
-      if (description) {
-        this.typeWriterEffect(`📜 Obiectiv: ${description}`);
-      }
-    }
-
-    // Dacă avem body, intrăm în el (Recursivitate)
-    if (node.body && node.body.length > 0) {
-      node.body.forEach((child: any) => this.processNode(child));
-    }
-  }
-
-  private typeWriterEffect(text: string) {
-    // Aici poți adăuga logica de typing pentru atmosferă
-    console.log(text); 
-  }
+export function k(strings: TemplateStringsArray, ...values: any[]) {
+  const raw = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
+  const ast = parser.parse(raw);
+  
+  const validated = KrakoanNodeSchema.array().parse(ast);
+  const graphManager = new GraphManager(validated);
+  
+  return graphManager.getGraph();
 }

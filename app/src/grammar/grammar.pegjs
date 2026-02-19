@@ -1,7 +1,33 @@
 {{
+ const SNIPPETS = {
+    "📑": ":fragment",
+    "🧠": ":concept",
+    "👤": ":entity",
+    "📦": ":collection",
+    "🧬": ":logic",
+    "🔓": ":asset",
+    "📌": ":state",
+    "🔑": ":tag",
+    "🧩": ":stance",
+    "⌛": ":time",
+    "🛡️": ":shield",
+    "🛡": ":shield",
+    "🔗": ":link",
+    "🔱": ":authority",
+    "🤝": ":alliance",
+    "⚔️": ":conflict",
+    "➔": ":trigger",
+    "⚓": ":anchor",
+    "📡": ":signal",
+    "💬": ":speech"
+  };
+
   function buildNode(type, tags, body, params, metadata) {
+    const cleanType = typeof type === "string" ? type.replace(/\uFE0F/g, "") : type;
+    const semanticType = SNIPPETS[cleanType] || type;
+
     return {
-      type: type,
+      type: semanticType,
       body: body,
       tags: tags,
       params: params,
@@ -17,8 +43,8 @@ Start
   = _ instructions:(Expression)* _ { return instructions; }
 
 Instruction
-  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";" _ { 
-    return buildNode("INSTRUCTION", tags, body || [], { ...params }, { ...symbol.metadata });
+  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";"? _ { 
+    return buildNode(symbol.type, tags, body || [], { ...params }, { ...symbol.metadata });
   }
 
 TagList
@@ -33,12 +59,12 @@ TagList
 
 Tag
   = "#" id:Identifier {
-    return { type: "TAG", value: id };
+    return { type: "#", value: id };
   }
 
 ReferencePath
   = ref:Reference "::" members:(PathMember / MemberSelection) {
-    return { type: "PATH", root: ref.id, members: members };
+    return { type: "::", root: ref.id, members: members };
   }
 
 MemberSelection
@@ -54,12 +80,26 @@ PathMember
 
 Reference
   = "@" id:Identifier {
-    return { type: "REFERENCE", id: id };
+    return { type: "@", id: id };
   }
 
 ActionPath
-  = source:(ReferencePath / Reference / Instruction)? _ op:("➔" / "->") _ target:(ReferencePath / Reference / Instruction) _ ";" _ {
-    return buildNode("ACTION_TRIGGER", [], [], { from: source || undefined, to: target }, { value: op, known: true });
+  = source:(Instruction / ReferencePath / Reference) _ op:"➔" _ target:(Instruction / ReferencePath / Reference) _ {
+    return buildNode(op, [], [], { from: source, to: target }, { known: true });
+  }
+  / "➔" _ target:(Instruction / ReferencePath / Reference) {
+    return buildNode("➔", [], [], { from: undefined, to: target }, { known: true });
+  }
+
+Expression
+  = _ e:(ActionPath / Instruction / ReferencePath / Reference) _ ";"? _ {
+    return e;
+  }
+
+Body
+  = _ "{" _ head:Expression? tail:(_ Expression)* _ "}" _ {
+    const results = head ? [head] : [];
+    return results.concat(tail.map(t => t[1]));
   }
 
 ParameterList
@@ -77,33 +117,24 @@ Parameter
     return { [label]: value }
   }
 
-Body
-  = _ "{" instructions:(Expression)* "}" _ {
-    return instructions;
-  }
+Symbol
+  = icon:EmojiSequence {
+      // Aici facem "vama" manual în JS
+      const knownIcons = ["📑", "🧠", "👤", "📦", "🧬", "🔓", "📌", "🧩", "⌛", "⚖️", "🔗", "🔱", "🤝", "⚔️", "🛡️"];
+      
+      // Curățăm icon-ul de orice variator invizibil pentru comparație
+      const normalizedIcon = icon.replace(/\uFE0F/g, "");
+      const isKnown = knownIcons.some(k => k.replace(/\uFE0F/g, "") === normalizedIcon);
 
-Symbol 
-  = KnownTotem 
-  / GenericEmoji
-
-KnownTotem
-  = icon:("📑" / "🧠" / "👤" / "📦" / "🧬" / "🔓" / "📌" / "🧩" / "⌛" / "⚖️" / "🔗" / "🔱" / "🤝" / "⚔️") { 
-      return buildNode("TOTEM", {}, [], {}, { value: icon, known: true }); 
+      return buildNode(normalizedIcon, {}, [], {}, { known: isKnown });
     }
 
-GenericEmoji
-  = char:$([^\s\w\(\)\[\]\{\};,:][\uFE00-\uFE0F]?) {
-      return buildNode("TOTEM", {}, [], {}, { value: char, known: false });
-    }
-
+EmojiSequence 
+  = $(([\uD800-\uDBFF][\uDC00-\uDFFF] / [^\s\w\(\)\[\]\{\};,:])[\uFE00-\uFE0F\u200D]*)
+  
 Identifier
   = String
   / $([a-zA-Z0-9_]+)
-
-Expression
-  = _ el:(ActionPath / Instruction / ReferencePath / Reference) _ ";"? _ {
-    return el;
-  }
 
 TextContent
   = $((!"\"" .)*)

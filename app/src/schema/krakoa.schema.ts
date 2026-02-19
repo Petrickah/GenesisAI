@@ -1,20 +1,29 @@
+// schema.ts
 import { z } from "zod";
 
-// Definim schema pentru o singură instrucțiune
-export const InstructionSchema: z.ZodType<any> = z.lazy(() =>
-  z.object({
-    type: z.string().trim().min(1), // Emoji-ul (👤, 🛡️, etc.)
-    id: z.string().min(1),          // Identificatorul (Wade Wilson, STANCE)
-    params: z.record(z.string(), z.union([z.string(), z.number()])), // { status: "hungry" }
-    tags: z.array(z.string()),      // [mutant, high_regen]
-    children: z.array(InstructionSchema), // RECURSIVITATE! 🔄
-    timestamp: z.number().default(() => Date.now()),
-  })
-);
+const MetadataSchema = z.object({
+  known: z.boolean(),
+  timestamp: z.number(),
+});
 
-// Schema pentru întregul program (o listă de instrucțiuni)
-export const KrakoaProgramSchema = z.array(InstructionSchema);
+// Schema pentru noduri standard (Magneto, Wade, etc.)
+const BaseNodeSchema = z.object({
+  type: z.string(),
+  body: z.array(z.any()).default([]), // Forțăm un array gol implicit
+  tags: z.array(z.string()).nullable().default(null),
+  params: z.record(z.string(), z.any()).default({}), // Forțăm un obiect implicit
+  metadata: MetadataSchema,
+});
 
-// Extragem tipul TypeScript automat din schemă
-export type Instruction = z.infer<typeof InstructionSchema>;
-export type KrakoaProgram = z.infer<typeof KrakoaProgramSchema>;
+// Schema specifică pentru Trigger (➔)
+const ActionPathSchema = BaseNodeSchema.extend({
+  type: z.literal(":trigger"),
+  params: z.object({
+    id: z.string().optional(), // Adăugăm id opțional și aici ca să nu crape TS
+    from: z.any().optional(),
+    to: z.any(),
+  }),
+});
+
+export const KrakoanNodeSchema = z.union([ActionPathSchema, BaseNodeSchema]);
+export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
