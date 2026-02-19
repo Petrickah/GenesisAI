@@ -4,6 +4,7 @@
     "🧠": ":concept",
     "👤": ":entity",
     "📦": ":collection",
+    "📂": ":content",
     "🧬": ":logic",
     "🔓": ":asset",
     "📌": ":state",
@@ -11,7 +12,10 @@
     "🧩": ":stance",
     "⌛": ":time",
     "🛡️": ":shield",
-    "🛡": ":shield",
+    "🩺": ":utility",
+    "💉": ":function",
+    "🚀": ":action",
+    "🎭": ":intent",
     "🔗": ":link",
     "🔱": ":authority",
     "🤝": ":alliance",
@@ -39,8 +43,26 @@
   }
 }}
 
-Start
-  = _ instructions:(Expression)* _ { return instructions; }
+Start = _ program:NodeList _ { return program; }
+
+NodeList = head:Node tail:(_ Node)* {
+  return [head, ...tail.map(t => t[1])];
+}
+
+Node 
+  = ActionPath 
+  / Instruction 
+  / ReferencePath
+
+ActionPath
+  = "➔" _ target:ValidTarget {
+      return buildNode(":trigger", [], [], { from: undefined, to: target }, { known: true });
+    }
+
+ValidTarget
+  = Instruction
+  / ReferencePath
+  / Reference
 
 Instruction
   = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";"? _ { 
@@ -48,48 +70,35 @@ Instruction
   }
 
 TagList
-  = _ "🔑" _ "[" head:Tag tail:(_ "," _ Tag)* _ "]" _ {
-    const tags = [head.value];
-    tail.forEach(element => {
-      const tag = element[3];
-      tags.push(tag.value);
-    })
-    return tags;
-  }
-
-Tag
-  = "#" id:Identifier {
-    return { type: "#", value: id };
-  }
-
-ReferencePath
-  = ref:Reference "::" members:(PathMember / MemberSelection) {
-    return { type: "::", root: ref.id, members: members };
-  }
+  = _ "🔑" _ selection:MemberSelection _ {
+      return { type: ":tag", members: selection };
+    }
 
 MemberSelection
-  = "[" _ head:PathMember tail:(_ "," _ PathMember)* _ "]" {
-    return [head, ...tail.map(t => t[3])];
-  }
-  / member:PathMember { return [member]; }
+  = "[" _ head:PathElement tail:(_ "," _ PathElement)* _ "]" {
+      return [head, ...tail.map(t => t[3])];
+    }
+  / element:PathElement { return [element]; }
 
-PathMember
+
+PathElement
   = ReferencePath
   / Reference
+  / Tag
   / Identifier
 
-Reference
-  = "@" id:Identifier {
-    return { type: "@", id: id };
-  }
+ReferencePath
+  = root:Reference "::" members:PathSequence {
+      return { type: "::", root: root.id, members: members };
+    }
 
-ActionPath
-  = source:(Instruction / ReferencePath / Reference) _ op:"➔" _ target:(Instruction / ReferencePath / Reference) _ {
-    return buildNode(op, [], [], { from: source, to: target }, { known: true });
-  }
-  / "➔" _ target:(Instruction / ReferencePath / Reference) {
-    return buildNode("➔", [], [], { from: undefined, to: target }, { known: true });
-  }
+PathSequence
+  = head:Identifier tail:("::" Identifier)* {
+      return [head, ...tail.map(t => t[1])];
+    }
+
+Reference = "@" id:Identifier { return { type: "@", id: id }; }
+Tag       = "#" id:Identifier { return { type: "#", value: id }; }
 
 Expression
   = _ e:(ActionPath / Instruction / ReferencePath / Reference) _ ";"? _ {

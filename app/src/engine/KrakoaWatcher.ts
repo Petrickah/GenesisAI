@@ -4,8 +4,8 @@ import chokidar from 'chokidar';
 import readline from 'node:readline';
 import * as esbuild from 'esbuild';
 import { exec } from 'child_process';
-import { KrakoanNodeSchema } from '../schema/krakoa.schema.js';
 import { createRequire } from 'module';
+import z from 'zod';
 
 const INPUT_DIR = './src/engine/krakoa';
 const GRAMMAR_PATH = './src/grammar/grammar.pegjs';
@@ -36,50 +36,46 @@ const ALIASES = Object.keys(SNIPPETS);
 
 export let parser: any = null;
 export let isBuilding: boolean = false;
-export let rl = readline.createInterface({
-  input: process.stdin,
-  output: process.stdout,
-  prompt: '>>> ',
-  completer: (line: string) => {
-    // 1. Spargem linia în cuvinte/token-uri
-    const words = line.split(/\s+/);
-    // 2. Ne interesează doar ultimul cuvânt (cel pe care îl scrii acum)
-    const lastWord = words[words.length - 1] || "";
+export let rl = (isREPL: boolean) => {
+  if (!isREPL) return null;
 
-    // 3. Filtrăm ALIASES pe baza ultimului cuvânt
-    const hits = ALIASES.filter((a) => a.startsWith(lastWord));
+  return readline.createInterface({
+    input: process.stdin,
+    output: process.stdout,
+    prompt: '>>> ',
+    completer: (line: string) => {
+      const words = line.split(/\s+/);
+      const lastWord = words[words.length - 1] || "";
+      const hits = ALIASES.filter((a) => a.startsWith(lastWord));
 
-    if (hits.length === 1 && lastWord.length > 1) {
-      // ⚠️ AICI E MAGIA: 
-      // Returnăm snippet-ul, dar readline are nevoie de "substring-ul" 
-      // care va fi înlocuit (lastWord), nu toată linia!
-      return [[SNIPPETS[hits[0]!]], lastWord];
+      if (hits.length === 1 && lastWord.length > 1) {
+        return [[SNIPPETS[hits[0]!]], lastWord];
+      }
+
+      return [hits.length ? hits : ALIASES, lastWord];
     }
+  });
+}
 
-    // Dacă sunt mai multe variante, le afișăm doar pentru ultimul cuvânt
-    return [hits.length ? hits : ALIASES, lastWord];
-  }
-});
+export function startWatcher(isREPL: boolean = false) {
+  const currentREPL = rl(isREPL);
 
-export function startWatcher() {
   const loadParser = () => {
     try {
       delete require.cache[require.resolve(COMPILED_PATH)];
       parser = require(COMPILED_PATH);
-      if (rl) rl.prompt();
+      if (currentREPL) currentREPL.prompt();
     } catch (e) {
       console.error("❌ Parser load error:", e);
     }
   };
 
-  // Adaugă această funcție în Watcher
   const revalidateAll = () => {
     const files = fs.readdirSync(INPUT_DIR).filter(f => f.endsWith('.kts'));
     console.log(`🔄 Revalidating all ${files.length} files with the new grammar...`);
     
     files.forEach(file => {
       const fullPath = path.join(INPUT_DIR, file);
-      // Trigger manual al evenimentului de schimbare
       watcher.emit('change', fullPath); 
     });
   };
@@ -88,7 +84,7 @@ export function startWatcher() {
   const watcher = chokidar.watch(path.resolve(INPUT_DIR), { 
     persistent: true,
     ignoreInitial: false,
-    usePolling: true // Forțează-l să verifice manual
+    usePolling: true
   });
 
   loadParser();
@@ -144,12 +140,18 @@ export function startWatcher() {
       loadParser();
     } catch (error: any) {
       console.error(`❌ Error in ${fileName}:`);
-      if (error.name === 'ZodError') {
-        console.error('⚠️ Schema mismatch:', error.errors);
+      
+      // Verificăm dacă e Zod sau altceva fără să printăm tot Base64-ul
+      if (error instanceof z.ZodError) {
+        console.error('⚠️ Schema mismatch:', JSON.stringify(error.format(), null, 2));
       } else {
-        console.error('⚠️ Parser error:', error.message);
+        // Tăiem eroarea dacă e prea lungă (base64 prevention)
+        const shortMessage = error.message?.substring(0, 200);
+        console.error('⚠️ System error:', shortMessage);
       }
     }
   });
+
+  return currentREPL;
 }
 

@@ -1,8 +1,7 @@
 import { k } from './engine/GenesisEngine.js';
-import * as KrakoaLauncher from './engine/KrakoaWatcher.js';
+import * as KrakoaWatcher from './engine/KrakoaWatcher.js';
 
 function startSystem() {
-  KrakoaLauncher.startWatcher();
   const args = process.argv.slice(2);
 
   if (args.includes('--repl')) {
@@ -15,7 +14,7 @@ function startSystem() {
 }
 
 function execute(input: string) {
-  if (!KrakoaLauncher.parser) {
+  if (!KrakoaWatcher.parser) {
     console.log("🧬 [System Error]: The Parser hasn't been loaded!");
     return;
   }
@@ -33,24 +32,27 @@ function execute(input: string) {
 function launchREPL() {
   let multiLineBuffer = "";
 
-  KrakoaLauncher.rl.prompt();
-  KrakoaLauncher.rl.on('line', (line) => {
+  let currentREPL = KrakoaWatcher.startWatcher(true);
+  if(!currentREPL) return;
+
+  currentREPL.prompt();
+  currentREPL.on('line', (line) => {
     multiLineBuffer += line + "\n";
 
     const openedBraces = (multiLineBuffer.match(/{/g) || []).length;
     const closedBraces = (multiLineBuffer.match(/}/g) || []).length;
 
     if (openedBraces > closedBraces) {
-      KrakoaLauncher.rl.setPrompt('... ');
-      return KrakoaLauncher.rl.prompt();
+      currentREPL.setPrompt('... ');
+      return currentREPL.prompt();
     }
 
     const finalInput = multiLineBuffer.trim();
     multiLineBuffer = "";
-    KrakoaLauncher.rl.setPrompt('>>> ');
+    currentREPL.setPrompt('>>> ');
 
     if (!finalInput) {
-      return KrakoaLauncher.rl.prompt();
+      return currentREPL.prompt();
     }
 
     switch (finalInput) {
@@ -59,18 +61,16 @@ function launchREPL() {
       case '.clear':
         console.clear();
         console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
-        return KrakoaLauncher.rl.prompt();
+        return currentREPL.prompt();
     }
 
     execute(finalInput);
-    KrakoaLauncher.rl.prompt();
+    currentREPL.prompt();
   });
-
-  return KrakoaLauncher.rl;
 }
 
 function launchServer() {
-  console.log("The system runs in background...");
+  KrakoaWatcher.startWatcher(false);
 }
 
 startSystem();
