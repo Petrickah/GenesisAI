@@ -118,9 +118,9 @@ To be sure the data integrity is maintained we use a reference implementation. I
 
 ### **2nd Week: The Parsing Engine (The Compiler)**
 
-* [ ] Transpiling the tokens into JSON structured objects for SurrealDB.
-* [ ] The syntactic validation of the `.krakoa` scripts.
-* [ ] Mapping the final schemas in SurrealDB
+* [X] Compiling the tokens into JSON structured objects for a runner.
+* [X] The sintactic validation of the `.krakoa` scripts.
+* [ ] Building the Virtual Machine for executing Krakoan Scripts.
 
 ### **3rd Week: Integrating with SurrealDB (The Ledger)**
 
