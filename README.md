@@ -67,45 +67,42 @@ The Domain Specific Language (DSL) used in GenesisAI, called Krakoa Nexus DSL, u
 
 ### 💻 Reference Implementation (The Wade Example)
 
-To be sure the data integrity is maintained we use a reference implementation. In the following example, an AI Agent called Wade Wilson (Deadpool) takes the behavior defined in a based template, while Wuyang (from the video game called Overwatch, by Blizzard Entertainment) Agent acts as a system monitor to alert the overreaction of Deadpool agent. ("logical overheating")
+To be sure the data integrity is maintained we use a reference implementation. In the following example, an AI Agent called Wade Wilson (Deadpool) takes the behavior defined in a based template and gets spawned in the world.
 
-```krakoa
-➔ 🧠(title: "Thermal Logic Validation", id: "NEX-SYS-THERM") [
-    // 1. ASSET DEFINITION: The Zhuque Fans (Zhuque 朱雀)
-    🔓(ASSET: "Zhuque_Fans", id: "ANR-AST-FAN") [
-        🔑[#ThermalArtifact, #FireElement];
-        🧬(logic: "MYSTIC_HEAT") ["Capable of generating intense semantic heat."];
-    ];
+```ts
+🧠("NEX-CON_RESL", name: "Absurd Overdrive") 🔑 [#PsychologicalBuffer, #MetaHumor, #ChaosDefense] {
+    ➔ 🧬("Logic", description: "Damage control via reality detachment.");
+    🔓("NEX-AST-WADE_GEAR", name: "Wade's Gear") 🔑 [#Weaponry, #TeleportationDevice] {
+        🩺("Utility", status: "READY", description: "Eliminating bureaucracy via fast repositioning.");
+        💉("Bypass Bureaucracy", description: "Fast repositioning via teleportation");
+    };
+    👤("WADE_BASE", name: "Wade Wilson") 🔑 [#MercWithAMouth, #HealingFactor, #AnvilSlayer] {
+        🧩("Maximum Effort") 🔑 [#Sarcastic, #Optimism, #Iresponsability];
+        📑("WADE-FRG-META", name: "Meta Commentary") {
+            📂("Chimichanga Optimized", content: "Hey, Architect! Don't forget about the bug! They are little design suprises.");
+        };
+    };
+};
 
-    // 2. TEMPLATE DEFINITION
-    👤(TEMPLATE: "Base_Mercenary", id: "WADE_BASE") [
-        🧬(logic: "CHAOS_MODE") ["High unpredictability and meta-awareness."];
-    ];
-
-    // 3. AGENT INSTANCE: Wade Wilson
-    ➔ 👤(AGENT: "Wade_Wilson", id: "NEX-AGT-WADE") [
-        🔗(type: "Inheritance") [ #NEX-AGT-WADE :: #WADE_BASE ];
-        📌(set: "Action", value: "Grilling_with_Zhuque_Fans");
-
-        // The logic that triggers the system overheat
-        ➔ 🧬(op: "OVERCLOCK_HEAT") [ @ANR-AST-FAN ];
-        
-        // Signal emitted for the system listeners
-        📡(event: "THERMAL_SPIKE", value: "95°C");
-    ];
-
-    // 4. SYSTEM MONITOR: Wuyang (Xuanwu 玄武)
-    ➔ 👤(AGENT: "Wuyang", id: "NEX-AGT-WUYA") [
-        // The Anchor acts as an automated Reality Check
-        ⚓(condition: "@NEX-AGT-WADE::Temperature > 90°C") [
-            🧬(mode: "XUANWU_STABILIZATION") [ "Deploying mystical coolant to prevent system crash." ];
-            
-            ➔ 💬(type: "Alert", to: "ARCHITECT") [
-                📂(content: "Status") [ "Wade is burning the kernel again. Stabilization active." ];
-            ];
-        ];
-    ];
-];
+➔ 👤("NEX-AGT-WADE", name: "Wade Wilson") {
+    🔗("Inheritance") 🔑 [@"NEX-AGT-WADE", @"NEX-CON_RESL"::"WADE_BASE", @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
+    📌("Health", value: λ(ctx.MaxHealth));
+    📌("Current Logic", value: "Neutral Chaos");
+    📌("Active Equipment") 🔑 [@"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
+    ➔ 🧬("Healing Factor", mode: "Passive") {
+        ⚓("Health Check", condition: λ(ctx.Health < 50)) 🔑 [@Self::"Health"] {
+            🚀("Regenerate Health", power: "Auto");
+        }
+    };
+    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer)) 🔑 [@Self::PsychologicalBuffer] {
+        🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
+        📡("Meta Awareness", target: "System");
+        ➔ 💬("Fourth Wall Breach", to: "Architect") {
+            🎭("Jesting", breakWall: "true");
+            📂("Message") 🔑 [@"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized"];
+        }
+    };
+};
 ```
 
 ## 🗺️ One month Roadmap (The Genesis Phase)
