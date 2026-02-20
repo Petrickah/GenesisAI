@@ -1,5 +1,5 @@
 {{
- const SNIPPETS = {
+  const SNIPPETS = {
     "📑": ":fragment",
     "🧠": ":concept",
     "👤": ":entity",
@@ -94,14 +94,30 @@ ReferencePath
 
 PathSequence
   = head:Identifier tail:("::" Identifier)* {
-      return [head, ...tail.map(t => t[1])];
-    }
+    return [head, ...tail.map(t => t[1])];
+  }
 
 Reference = "@" id:Identifier { return { type: "@", id: id }; }
 Tag       = "#" id:Identifier { return { type: "#", value: id }; }
 
+LambdaExpression
+  = _ "λ" _ "(" content:LambdaBody ")" _ {
+    const raw = content.trim();
+    const isComplex = raw.startsWith(String.fromCharCode(123));
+    const finalCode = isComplex ? raw : `return ${raw};`;
+    return {
+      type: ":lambda",
+      code: finalCode,
+      isComplex: isComplex,
+      timestamp: Date.now()
+    };
+  }
+
+LambdaBody
+  = $([^()]* ("(" LambdaBody ")")* [^()]*) 
+
 Expression
-  = _ e:(ActionPath / Instruction / ReferencePath / Reference) _ ";"? _ {
+  = _ e:(ActionPath / LambdaExpression / Instruction / ReferencePath / Reference) _ ";"? _ {
     return e;
   }
 
@@ -122,21 +138,18 @@ ParameterList
   }
 
 Parameter
-  = _ label:Identifier ":" value:String {
+  = _ label:Identifier ":" value:(LambdaExpression / String / PathElement) {
     return { [label]: value }
   }
 
 Symbol
   = icon:EmojiSequence {
-      // Aici facem "vama" manual în JS
-      const knownIcons = ["📑", "🧠", "👤", "📦", "🧬", "🔓", "📌", "🧩", "⌛", "⚖️", "🔗", "🔱", "🤝", "⚔️", "🛡️"];
-      
-      // Curățăm icon-ul de orice variator invizibil pentru comparație
-      const normalizedIcon = icon.replace(/\uFE0F/g, "");
-      const isKnown = knownIcons.some(k => k.replace(/\uFE0F/g, "") === normalizedIcon);
+    const knownIcons = ["📑", "🧠", "👤", "📦", "🧬", "🔓", "📌", "🧩", "⌛", "⚖️", "🔗", "🔱", "🤝", "⚔️", "🛡️"];
+    const normalizedIcon = icon.replace(/\uFE0F/g, "");
+    const isKnown = knownIcons.some(k => k.replace(/\uFE0F/g, "") === normalizedIcon);
 
-      return buildNode(normalizedIcon, {}, [], {}, { known: isKnown });
-    }
+    return buildNode(normalizedIcon, {}, [], {}, { known: isKnown });
+  }
 
 EmojiSequence 
   = $(([\uD800-\uDBFF][\uDC00-\uDFFF] / [^\s\w\(\)\[\]\{\};,:])[\uFE00-\uFE0F\u200D]*)

@@ -17,15 +17,16 @@ export default k/*ts*/`
 
 ➔ 👤("NEX-AGT-WADE", name: "Wade Wilson") {
     🔗("Inheritance") 🔑 [@"NEX-AGT-WADE", @"NEX-CON_RESL"::"WADE_BASE", @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
-    📌("Status", value: "Healthy");
+    📌("Health", value: λ(ctx.MaxHealth));
     📌("Current Logic", value: "Neutral Chaos");
     📌("Active Equipment") 🔑 [@"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
     ➔ 🧬("Healing Factor", mode: "Passive") {
-        ⚓("Only When Damaged", condition: "Is Damaged") 🔑 [@Self::"Status"] {
+        ⚓("Health Check", condition: λ(ctx.Health < 50)) 🔑 [@Self::"Health"] {
+            λ({console.log("Hello, world");});
             🚀("Regenerate Health", power: "Auto");
         }
     };
-    ⚓("Psychological Buffer", condition: "Is Active") 🔑 [@Self::PsychologicalBuffer] {
+    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer === 'Active')) 🔑 [@Self::PsychologicalBuffer] {
         🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
         📡("Meta Awareness", target: "System");
         ➔ 💬("Fourth Wall Breach", to: "Architect") {
