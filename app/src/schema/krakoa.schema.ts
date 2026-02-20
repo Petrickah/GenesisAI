@@ -4,21 +4,17 @@ const ReferenceSchema = z.union([z.string().startsWith("@"), z.string().startsWi
   const cleanPath = val.slice(1);
   const segments = cleanPath.split("::");
   return {
+    kind: "reference",
     original: val,
     segments: segments,
     root: segments[0],
     target: segments[segments.length - 1]
   };
 });
+
 const BaseKrakoanNodeSchema = z.object({
   type: z.string(),
-  params: z.object({
-    id: z.string().optional(),
-    tags: z.array(ReferenceSchema).default([]),
-    timestamp: z.number().default(Date.now()),
-    code: z.string().optional(),
-    isComplex: z.boolean().optional(),
-  })
+  params: z.record(z.string(), z.any())
 })
 
 export const KrakoanNodeSchema = BaseKrakoanNodeSchema.extend({
@@ -36,7 +32,7 @@ const KrakoanInstructionSchema = z.object({
 export const KrakoanProgramSchema = z.object({
   entry: z.number(),
   symbols: z.record(z.string(), z.number()).optional().default({}),
-  text: z.record(z.number(), z.any()).optional().default({}),
+  text: z.any(),
   code: z.record(z.number(), KrakoanInstructionSchema)
 }).nullable();
 

@@ -22,11 +22,10 @@ export default k/*ts*/`
     📌("Active Equipment") 🔑 [@"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
     ➔ 🧬("Healing Factor", mode: "Passive") {
         ⚓("Health Check", condition: λ(ctx.Health < 50)) 🔑 [@Self::"Health"] {
-            λ({console.log("Hello, world");});
             🚀("Regenerate Health", power: "Auto");
         }
     };
-    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer === 'Active')) 🔑 [@Self::PsychologicalBuffer] {
+    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer)) 🔑 [@Self::PsychologicalBuffer] {
         🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
         📡("Meta Awareness", target: "System");
         ➔ 💬("Fourth Wall Breach", to: "Architect") {
