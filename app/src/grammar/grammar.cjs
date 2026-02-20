@@ -32,18 +32,20 @@
     "💬": ":speech"
   };
 
-  function buildNode(type, tags, body, params, metadata) {
-    const cleanType = typeof type === "string" ? type.replace(/\uFE0F/g, "") : type;
-    const semanticType = SNIPPETS[cleanType] || type;
+  const ALIASES = Object.keys(SNIPPETS).map((inputKey) => normalize(inputKey));
 
+  function normalize(inputKey) {
+    const normalizedInput = inputKey.replace(/\uFE0F/g, "");
+    return SNIPPETS[normalizedInput] || inputKey
+  }
+
+  function buildNode(type, body, params) {
     return {
-      type: semanticType,
-      body: body,
-      tags: tags,
-      params: params,
-      metadata: {
-        ...metadata,
-        timestamp: Date.now()
+      type,
+      body, 
+      params: {
+        timestamp: Date.now(),
+        ...params,
       }
     };
   }
@@ -268,45 +270,46 @@ function peg$parse(input, options) {
   return [head, ...tail.map(t => t[1])];
   }
   function peg$f2(target) {
-      return buildNode(":trigger", [], [], { from: undefined, to: target }, { known: true });
+      return buildNode(":trigger", [target], {});
   }
   function peg$f3(symbol, params, tags, body) {    
-       return buildNode(symbol.type, tags, body || [], { ...params }, { ...symbol.metadata });
+       return buildNode(symbol.type, body || [], { ...params, tags: tags || [] });
   }
   function peg$f4(selection) {
-      return { type: ":tag", members: selection };
+    return selection;
   }
   function peg$f5(head, tail) {
-      return [head, ...tail.map(t => t[3])];
+    return [head, ...tail.map(t => t[3])];
   }
-  function peg$f6(element) {    return [element];  }
-  function peg$f7(root, members) {
-      return { type: "::", root: root.id, members: members };
+  function peg$f6(root, members) {
+      return `${root}::${members}`;
   }
-  function peg$f8(head, tail) {
-    return [head, ...tail.map(t => t[1])];
+  function peg$f7(head, tail) {
+    return [head, ...tail.map(t => t[1])].join("::");
   }
-  function peg$f9(id) {    return { type: "@", id: id };  }
-  function peg$f10(id) {    return { type: "#", value: id };  }
-  function peg$f11(content) {
+  function peg$f8(id) {    return `@${id}`;  }
+  function peg$f9(id) {    return `#${id}`;  }
+  function peg$f10(content) {
     const raw = content.trim();
     const isComplex = raw.startsWith(String.fromCharCode(123));
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
       type: ":lambda",
-      code: finalCode,
-      isComplex: isComplex,
-      timestamp: Date.now()
+      params: {
+        code: finalCode,
+        isComplex: isComplex,
+      },
+      body: []
     };
   }
-  function peg$f12(e) {
+  function peg$f11(e) {
     return e;
   }
-  function peg$f13(head, tail) {
+  function peg$f12(head, tail) {
     const results = head ? [head] : [];
     return results.concat(tail.map(t => t[1]));
   }
-  function peg$f14(head, tail) {
+  function peg$f13(head, tail) {
     const params = { id: head };
     tail.forEach(element => {
       const p = element[3];
@@ -314,17 +317,15 @@ function peg$parse(input, options) {
     });
     return params;
   }
-  function peg$f15(label, value) {
+  function peg$f14(label, value) {
     return { [label]: value }
   }
-  function peg$f16(icon) {
-    const knownIcons = ["📑", "🧠", "👤", "📦", "🧬", "🔓", "📌", "🧩", "⌛", "⚖️", "🔗", "🔱", "🤝", "⚔️", "🛡️"];
-    const normalizedIcon = icon.replace(/\uFE0F/g, "");
-    const isKnown = knownIcons.some(k => k.replace(/\uFE0F/g, "") === normalizedIcon);
-
-    return buildNode(normalizedIcon, {}, [], {}, { known: isKnown });
+  function peg$f15(icon) {
+    const normalizedIcon = normalize(icon);
+    const isKnown = ALIASES.some(k => k === normalizedIcon);
+    return buildNode(normalizedIcon, [], {});
   }
-  function peg$f17(text) {    return text;  }
+  function peg$f16(text) {    return text;  }
   let peg$currPos = options.peg$currPos | 0;
   let peg$savedPos = peg$currPos;
   const peg$posDetailsCache = [{ line: 1, column: 1 }];
@@ -770,15 +771,6 @@ function peg$parse(input, options) {
       peg$currPos = s0;
       s0 = peg$FAILED;
     }
-    if (s0 === peg$FAILED) {
-      s0 = peg$currPos;
-      s1 = peg$parsePathElement();
-      if (s1 !== peg$FAILED) {
-        peg$savedPos = s0;
-        s1 = peg$f6(s1);
-      }
-      s0 = s1;
-    }
 
     return s0;
   }
@@ -817,7 +809,7 @@ function peg$parse(input, options) {
         s3 = peg$parsePathSequence();
         if (s3 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f7(s1, s3);
+          s0 = peg$f6(s1, s3);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -887,7 +879,7 @@ function peg$parse(input, options) {
         }
       }
       peg$savedPos = s0;
-      s0 = peg$f8(s1, s2);
+      s0 = peg$f7(s1, s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -911,7 +903,7 @@ function peg$parse(input, options) {
       s2 = peg$parseIdentifier();
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f9(s2);
+        s0 = peg$f8(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -939,7 +931,7 @@ function peg$parse(input, options) {
       s2 = peg$parseIdentifier();
       if (s2 !== peg$FAILED) {
         peg$savedPos = s0;
-        s0 = peg$f10(s2);
+        s0 = peg$f9(s2);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -985,7 +977,7 @@ function peg$parse(input, options) {
         if (s6 !== peg$FAILED) {
           s7 = peg$parse_();
           peg$savedPos = s0;
-          s0 = peg$f11(s5);
+          s0 = peg$f10(s5);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -1142,7 +1134,7 @@ function peg$parse(input, options) {
       }
       s5 = peg$parse_();
       peg$savedPos = s0;
-      s0 = peg$f12(s2);
+      s0 = peg$f11(s2);
     } else {
       peg$currPos = s0;
       s0 = peg$FAILED;
@@ -1204,7 +1196,7 @@ function peg$parse(input, options) {
       if (s7 !== peg$FAILED) {
         s8 = peg$parse_();
         peg$savedPos = s0;
-        s0 = peg$f13(s4, s5);
+        s0 = peg$f12(s4, s5);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;
@@ -1294,7 +1286,7 @@ function peg$parse(input, options) {
         if (s7 !== peg$FAILED) {
           s8 = peg$parse_();
           peg$savedPos = s0;
-          s0 = peg$f14(s4, s5);
+          s0 = peg$f13(s4, s5);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -1335,7 +1327,7 @@ function peg$parse(input, options) {
         }
         if (s4 !== peg$FAILED) {
           peg$savedPos = s0;
-          s0 = peg$f15(s2, s4);
+          s0 = peg$f14(s2, s4);
         } else {
           peg$currPos = s0;
           s0 = peg$FAILED;
@@ -1359,7 +1351,7 @@ function peg$parse(input, options) {
     s1 = peg$parseEmojiSequence();
     if (s1 !== peg$FAILED) {
       peg$savedPos = s0;
-      s1 = peg$f16(s1);
+      s1 = peg$f15(s1);
     }
     s0 = s1;
 
@@ -1588,7 +1580,7 @@ function peg$parse(input, options) {
       if (s4 !== peg$FAILED) {
         s5 = peg$parse_();
         peg$savedPos = s0;
-        s0 = peg$f17(s3);
+        s0 = peg$f16(s3);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;

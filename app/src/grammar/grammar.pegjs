@@ -26,18 +26,20 @@
     "💬": ":speech"
   };
 
-  function buildNode(type, tags, body, params, metadata) {
-    const cleanType = typeof type === "string" ? type.replace(/\uFE0F/g, "") : type;
-    const semanticType = SNIPPETS[cleanType] || type;
+  const ALIASES = Object.keys(SNIPPETS).map((inputKey) => normalize(inputKey));
 
+  function normalize(inputKey) {
+    const normalizedInput = inputKey.replace(/\uFE0F/g, "");
+    return SNIPPETS[normalizedInput] || inputKey
+  }
+
+  function buildNode(type, body, params) {
     return {
-      type: semanticType,
-      body: body,
-      tags: tags,
-      params: params,
-      metadata: {
-        ...metadata,
-        timestamp: Date.now()
+      type,
+      body, 
+      params: {
+        timestamp: Date.now(),
+        ...params,
       }
     };
   }
@@ -56,7 +58,7 @@ Node
 
 ActionPath
   = "➔" _ target:ValidTarget {
-      return buildNode(":trigger", [], [], { from: undefined, to: target }, { known: true });
+      return buildNode(":trigger", [target], {});
     }
 
 ValidTarget
@@ -66,19 +68,18 @@ ValidTarget
 
 Instruction
   = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";"? _ { 
-    return buildNode(symbol.type, tags, body || [], { ...params }, { ...symbol.metadata });
+    return buildNode(symbol.type, body || [], { ...params, tags: tags || [] });
   }
 
 TagList
   = _ "🔑" _ selection:MemberSelection _ {
-      return { type: ":tag", members: selection };
-    }
+    return selection;
+  }
 
 MemberSelection
   = "[" _ head:PathElement tail:(_ "," _ PathElement)* _ "]" {
-      return [head, ...tail.map(t => t[3])];
-    }
-  / element:PathElement { return [element]; }
+    return [head, ...tail.map(t => t[3])];
+  }
 
 
 PathElement
@@ -89,16 +90,16 @@ PathElement
 
 ReferencePath
   = root:Reference "::" members:PathSequence {
-      return { type: "::", root: root.id, members: members };
+      return `${root}::${members}`;
     }
 
 PathSequence
   = head:Identifier tail:("::" Identifier)* {
-    return [head, ...tail.map(t => t[1])];
+    return [head, ...tail.map(t => t[1])].join("::");
   }
 
-Reference = "@" id:Identifier { return { type: "@", id: id }; }
-Tag       = "#" id:Identifier { return { type: "#", value: id }; }
+Reference = "@" id:Identifier { return `@${id}`; }
+Tag       = "#" id:Identifier { return `#${id}`; }
 
 LambdaExpression
   = _ "λ" _ "(" content:LambdaBody ")" _ {
@@ -107,9 +108,11 @@ LambdaExpression
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
       type: ":lambda",
-      code: finalCode,
-      isComplex: isComplex,
-      timestamp: Date.now()
+      params: {
+        code: finalCode,
+        isComplex: isComplex,
+      },
+      body: []
     };
   }
 
@@ -144,11 +147,9 @@ Parameter
 
 Symbol
   = icon:EmojiSequence {
-    const knownIcons = ["📑", "🧠", "👤", "📦", "🧬", "🔓", "📌", "🧩", "⌛", "⚖️", "🔗", "🔱", "🤝", "⚔️", "🛡️"];
-    const normalizedIcon = icon.replace(/\uFE0F/g, "");
-    const isKnown = knownIcons.some(k => k.replace(/\uFE0F/g, "") === normalizedIcon);
-
-    return buildNode(normalizedIcon, {}, [], {}, { known: isKnown });
+    const normalizedIcon = normalize(icon);
+    const isKnown = ALIASES.some(k => k === normalizedIcon);
+    return buildNode(normalizedIcon, [], {});
   }
 
 EmojiSequence 
