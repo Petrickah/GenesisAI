@@ -1,20 +1,40 @@
 import { z } from "zod";
 
-// Definim schema pentru o singură instrucțiune
-export const InstructionSchema: z.ZodType<any> = z.lazy(() =>
-  z.object({
-    type: z.string().trim().min(1), // Emoji-ul (👤, 🛡️, etc.)
-    id: z.string().min(1),          // Identificatorul (Wade Wilson, STANCE)
-    params: z.record(z.string(), z.union([z.string(), z.number()])), // { status: "hungry" }
-    tags: z.array(z.string()),      // [mutant, high_regen]
-    children: z.array(InstructionSchema), // RECURSIVITATE! 🔄
-    timestamp: z.number().default(() => Date.now()),
-  })
-);
+const ReferenceSchema = z.union([z.string().startsWith("@"), z.string().startsWith("#")]).transform((val) => {
+  const cleanPath = val.slice(1);
+  const segments = cleanPath.split("::");
+  return {
+    kind: "reference",
+    original: val,
+    segments: segments,
+    root: segments[0],
+    target: segments[segments.length - 1]
+  };
+});
 
-// Schema pentru întregul program (o listă de instrucțiuni)
-export const KrakoaProgramSchema = z.array(InstructionSchema);
+const BaseKrakoanNodeSchema = z.object({
+  type: z.string(),
+  params: z.record(z.string(), z.any())
+})
 
-// Extragem tipul TypeScript automat din schemă
-export type Instruction = z.infer<typeof InstructionSchema>;
-export type KrakoaProgram = z.infer<typeof KrakoaProgramSchema>;
+export const KrakoanNodeSchema = BaseKrakoanNodeSchema.extend({
+  body: z.array(z.lazy((): z.ZodObject => KrakoanNodeSchema)),
+});
+
+export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
+
+const KrakoanInstructionSchema = z.object({
+  type: z.string(),
+  params: z.record(z.string(), z.any()).default({}),
+  next: z.array(z.number())
+});
+
+export const KrakoanProgramSchema = z.object({
+  entry: z.number(),
+  symbols: z.record(z.string(), z.number()).optional().default({}),
+  text: z.any(),
+  code: z.record(z.number(), KrakoanInstructionSchema)
+}).nullable();
+
+export type KrakoanProgram = z.infer<typeof KrakoanProgramSchema>;
+export type KrakoanInstruction = z.infer<typeof KrakoanInstructionSchema>;
