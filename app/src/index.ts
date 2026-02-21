@@ -1,9 +1,9 @@
-import { k } from './engine/GenesisEngine.js';
+import { k } from './engine/KrakoaCompiler.js';
 import * as KrakoaWatcher from './engine/KrakoaWatcher.js';
 
-function startSystem() {
+async function startSystem() {
   const args = process.argv.slice(2);
-
+  
   if (args.includes('--repl')) {
     console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
     launchREPL();
