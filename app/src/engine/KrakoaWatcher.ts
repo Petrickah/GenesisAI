@@ -1,68 +1,21 @@
 import fs from 'fs';
 import path from 'path';
 import chokidar from 'chokidar';
-import readline from 'node:readline';
 import { exec } from 'child_process';
 import { createRequire } from 'module';
 import krakoa from './KrakoaEngine.js';
+import { KrakoaREPL } from '../ui/KrakoaREPL.js';
 
 const INPUT_DIR = 'src/programs';
 const GRAMMAR_PATH = 'src/grammar/grammar.pegjs';
 const COMPILED_PATH = '../grammar/grammar.cjs';
 const require = createRequire(import.meta.url);
-const SNIPPETS: Record<string, string> = {
-  ":fragment"     : "📑",
-  ":concept"      : "🧠",
-  ":entity"       : "👤",
-  ":collection"   : "📦",
-  ":content"      : "📂",
-  ":logic"        : "🧬",
-  ":asset"        : "🔓",
-  ":state"        : "📌",
-  ":tag"          : "🔑",
-  ":stance"       : "🧩",
-  ":time"         : "⌛",
-  ":shield"       : "🛡️",
-  ":utility"      : "🩺",
-  ":function"     : "💉",
-  ":action"       : "🚀",
-  ":intent"       : "🎭",
-  ":link"         : "🔗",
-  ":authority"    : "🔱",
-  ":alliance"     : "🤝",
-  ":conflict"     : "⚔️",
-  ":trigger"      : "➔",
-  ":anchor"       : "⚓",
-  ":signal"       : "📡",
-  ":speech"       : "💬"
-};
-const ALIASES = Object.keys(SNIPPETS);
 
 export let parser: any = null;
 export let isBuilding: boolean = false;
-export let rl = (isREPL: boolean) => {
-  if (!isREPL) return null;
-
-  return readline.createInterface({
-    input: process.stdin,
-    output: process.stdout,
-    prompt: '>>> ',
-    completer: (line: string) => {
-      const words = line.split(/\s+/);
-      const lastWord = words[words.length - 1] || "";
-      const hits = ALIASES.filter((a) => a.startsWith(lastWord));
-
-      if (hits.length === 1 && lastWord.length > 1) {
-        return [[SNIPPETS[hits[0]!]], lastWord];
-      }
-
-      return [hits.length ? hits : ALIASES, lastWord];
-    }
-  });
-}
 
 export function startWatcher(isREPL: boolean = false) {
-  const currentREPL = rl(isREPL);
+  const currentREPL = isREPL ? new KrakoaREPL() : undefined;
 
   const loadParser = () => {
     try {

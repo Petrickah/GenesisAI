@@ -1,34 +1,39 @@
 import esbuild from 'esbuild'
 import path from 'path';
 import z from 'zod';
+import { KrakoanProgramSchema } from '../schema/krakoa.schema.js';
 
-export default async function krakoa(filePath: string) {
-  const fileName = path.basename(filePath);
-  if (!fileName.endsWith('.kts')) return;
-
+export default async function krakoa(input: string, isPath: boolean = true) {
   try {
-    const result = await esbuild.build({
-      entryPoints: [filePath],
-      bundle: true,
-      write: false,
-      format: 'esm',
-      platform: 'node',
-      loader: { '.kts': 'ts' }
-    });
+    let rawSourceCode: string = input;
 
-    const rawSourceCode = result.outputFiles[0]?.text;
-    if(!rawSourceCode) {
+    if (isPath) {
+      const fileName = path.basename(input);
+      if (!fileName.endsWith('.kts')) return;
+
+      const result = await esbuild.build({
+        entryPoints: [input],
+        bundle: true,
+        write: false,
+        format: 'esm',
+        platform: 'node',
+        loader: { '.kts': 'ts' }
+      });
+
+      rawSourceCode = result.outputFiles[0]?.text || '';
+    }
+
+    if (!rawSourceCode) {
       throw new Error("The .kts file must have an export default k`...`");
     }
 
     const rawModule = await import(`data:text/javascript;base64,${Buffer.from(rawSourceCode).toString('base64')}`);
-    return rawModule.default;
-
+    return KrakoanProgramSchema.parse(rawModule.default);
   } catch(error: any) {
     if (error instanceof z.ZodError) {
       console.error(`⚠️ Schema mismatch: ${z.treeifyError(error)}`);
     } else {
-      console.error(`⚠️ System error: ${filePath}:${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
+      console.error(`⚠️ System error: ${input}:${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
     }
   }
 }
