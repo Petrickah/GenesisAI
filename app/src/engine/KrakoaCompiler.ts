@@ -1,78 +1,60 @@
-import parser from '../grammar/grammar.cjs';
 import { KrakoanNodeSchema, KrakoanProgramSchema, type KrakoanInstruction, type KrakoanNode, type KrakoanProgram } from '../schema/krakoa.schema.js';
-
-export interface AgentState {
-  name: string;
-  hp: number;
-  stress: number;
-  inventory: string[];
-}
+import parser from '../grammar/grammar.cjs';
 
 export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgram {
   const raw = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
   const ast = parser.parse(raw);
   
-  // return KrakoanNodeSchema.array().parse(ast);
   return compile(KrakoanNodeSchema.array().parse(ast));
 }
 
-function link(program: KrakoanProgram): KrakoanProgram {
-  const textPool: string[] = [];
-  const symbolMap: Record<string, number> = {};
-
-  if (program) {
-    Object.entries(program.code).forEach(([index, currInstruction]) => {
-      if (currInstruction.params.id) {
-        symbolMap[currInstruction.params.id] = parseInt(index);
-      }
-    });
-  }
-
-  function processValue(value: any): any {
-    if (typeof value === 'string') {
-      let index = textPool.indexOf(value);
-      if (index === -1) {
-        index = textPool.length;
-        textPool.push(value);
-      }
-
-      return index;
-    }
-
-    if (value && typeof value === 'object' && value.kind === 'reference') {
-      return {
-        ...value,
-        resolvedAddress: symbolMap[value.target] ?? -1
-      }
-    }
-
-    if (Array.isArray(value)) return value.map(processValue);
-    if (value && typeof value === 'object') {
-      const newObject: any = {};
-      for (let k in value)
-        newObject[k] = processValue(value[k]);
-      return newObject;
-    }
-
-    return value;
-  }
-
-  if (program) {
-    Object.values(program.code).forEach(currInstruction => {
-      currInstruction.params = processValue(currInstruction.params);
-    });
-  }
-
-  return KrakoanProgramSchema.parse({
-    ...program,
-    text: textPool,
-    symbols: symbolMap
-  });
-}
-
 function compile(nodes: KrakoanNode[]): KrakoanProgram {
-  let instructions: KrakoanInstruction[] = [];
   let firstTriggerIndex = -1;
+  let instructions: KrakoanInstruction[] = [];
+
+  function link(program: KrakoanProgram): KrakoanProgram {
+    const textPool: string[] = [];
+    const symbolMap: Record<string, number> = {};
+
+    function process(value: any): any {
+      if (!value) return undefined;
+      if (Array.isArray(value)) return value.map(process);
+      else {
+        if (typeof value === 'string') {
+          let index = textPool.indexOf(value);
+          if (index === -1) {
+            index = textPool.length;
+            textPool.push(value);
+          }
+          return index;
+        }
+        if (typeof value === 'object') {
+          const newObject: any = {};
+          for (let k in value)
+            newObject[k] = process(value[k]);
+          return newObject;
+        }
+      }
+      return value;
+    }
+
+    if (program) {
+      Object.entries(program.code).forEach(([index, currInstruction]) => {
+        if (currInstruction.params.id) {
+          symbolMap[currInstruction.params.id] = parseInt(index);
+        }
+      });
+      Object.values(program.code).forEach(currInstruction => {
+        currInstruction.params = process(currInstruction.params);
+      });
+    }
+
+    return KrakoanProgramSchema.parse({
+      ...program,
+      text: textPool,
+      symbols: symbolMap
+    });
+  }
 
   function process(bodyNodes: Record<string, any>[], returnIndex?: number): void {
     bodyNodes.forEach((activeNode, index) => {

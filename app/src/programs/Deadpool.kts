@@ -1,4 +1,4 @@
-import { k } from '../GenesisEngine'
+import { k } from '../engine/KrakoaCompiler'
 
 export default k/*ts*/`
 🧠("NEX-CON_RESL", name: "Absurd Overdrive") 🔑 [#PsychologicalBuffer, #MetaHumor, #ChaosDefense] {

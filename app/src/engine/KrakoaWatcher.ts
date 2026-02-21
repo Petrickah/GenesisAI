@@ -2,35 +2,39 @@ import fs from 'fs';
 import path from 'path';
 import chokidar from 'chokidar';
 import readline from 'node:readline';
-import * as esbuild from 'esbuild';
 import { exec } from 'child_process';
 import { createRequire } from 'module';
-import z from 'zod';
+import krakoa from './KrakoaEngine.js';
 
-const INPUT_DIR = './src/engine/krakoa';
+const INPUT_DIR = './src/programs';
 const GRAMMAR_PATH = './src/grammar/grammar.pegjs';
 const COMPILED_PATH = '../grammar/grammar.cjs';
 const require = createRequire(import.meta.url);
 const SNIPPETS: Record<string, string> = {
-  ":fragment": "📑",
-  ":concept": "🧠",
-  ":entity": "👤",
-  ":collection": "📦",
-  ":logic": "🧬",
-  ":asset": "🔓",
-  ":state": "📌",
-  ":tag": "🔑",
-  ":stance": "🧩",
-  ":time": "⌛",
-  ":shield": "🛡️",
-  ":link": "🔗",
-  ":authority": "🔱",
-  ":alliance": "🤝",
-  ":conflict": "⚔️",
-  ":trigger": "➔",
-  ":anchor": "⚓",
-  ":signal": "📡",
-  ":speech": "💬"
+  ":fragment"     : "📑",
+  ":concept"      : "🧠",
+  ":entity"       : "👤",
+  ":collection"   : "📦",
+  ":content"      : "📂",
+  ":logic"        : "🧬",
+  ":asset"        : "🔓",
+  ":state"        : "📌",
+  ":tag"          : "🔑",
+  ":stance"       : "🧩",
+  ":time"         : "⌛",
+  ":shield"       : "🛡️",
+  ":utility"      : "🩺",
+  ":function"     : "💉",
+  ":action"       : "🚀",
+  ":intent"       : "🎭",
+  ":link"         : "🔗",
+  ":authority"    : "🔱",
+  ":alliance"     : "🤝",
+  ":conflict"     : "⚔️",
+  ":trigger"      : "➔",
+  ":anchor"       : "⚓",
+  ":signal"       : "📡",
+  ":speech"       : "💬"
 };
 const ALIASES = Object.keys(SNIPPETS);
 
@@ -110,45 +114,16 @@ export function startWatcher(isREPL: boolean = false) {
   });
 
   watcher.on('all', async (event, filePath) => {
-    if (!filePath.endsWith('.kts')) return;
-    if (event !== 'change' && event !== 'add') return;
-
     const fileName = path.basename(filePath);
-    console.log(`\n🔄 [${event.toUpperCase()}] Processing ${fileName}...`);
+    if (!fileName.endsWith('.kts')) return;
+    if (event !== 'change' && event !== 'add') return;
+    
+    console.clear();
+    console.log(`👁️ Watcher: The ${fileName} Krakoan Program is being watched!`);
+    const krakoanProgram = await krakoa(filePath);
 
-    try {
-      const result = await esbuild.build({
-        entryPoints: [filePath],
-        bundle: true,
-        write: false,
-        format: 'esm',
-        loader: { '.kts': 'ts' },
-      });
-
-      const rawSourceCode = result.outputFiles[0]?.text;
-
-      if(!rawSourceCode) {
-        throw new Error("The .kts file must have an export default k`...`");
-      }
-
-      const encodedJs = "data:text/javascript;base64," + Buffer.from(rawSourceCode).toString('base64');
-      const rawModule = await import(encodedJs);
-
-      console.log(`✅ ${fileName} -> Compiled and validated successfully`);
-      console.log(`${JSON.stringify(rawModule.default, null, 2)}`);
-
-      loadParser();
-    } catch (error: any) {
-      console.error(`❌ Error in ${fileName}:`);
-      
-      // Verificăm dacă e Zod sau altceva fără să printăm tot Base64-ul
-      if (error instanceof z.ZodError) {
-        console.error('⚠️ Schema mismatch:', JSON.stringify(error.format(), null, 2));
-      } else {
-        // Tăiem eroarea dacă e prea lungă (base64 prevention)
-        const shortMessage = error.message?.substring(0, 200);
-        console.error('⚠️ System error:', shortMessage);
-      }
+    if (krakoanProgram) {
+      console.log(`✅ [${event.toUpperCase()}] The file ${fileName} was validated successfully...`);
     }
   });
 
