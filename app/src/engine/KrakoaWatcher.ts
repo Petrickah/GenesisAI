@@ -6,8 +6,8 @@ import { exec } from 'child_process';
 import { createRequire } from 'module';
 import krakoa from './KrakoaEngine.js';
 
-const INPUT_DIR = './src/programs';
-const GRAMMAR_PATH = './src/grammar/grammar.pegjs';
+const INPUT_DIR = 'src/programs';
+const GRAMMAR_PATH = 'src/grammar/grammar.pegjs';
 const COMPILED_PATH = '../grammar/grammar.cjs';
 const require = createRequire(import.meta.url);
 const SNIPPETS: Record<string, string> = {
@@ -120,7 +120,7 @@ export function startWatcher(isREPL: boolean = false) {
     
     console.clear();
     console.log(`👁️ Watcher: The ${fileName} Krakoan Program is being watched!`);
-    const krakoanProgram = await krakoa(filePath);
+    const krakoanProgram = await krakoa(`${INPUT_DIR}/${fileName}`);
 
     if (krakoanProgram) {
       console.log(`✅ [${event.toUpperCase()}] The file ${fileName} was validated successfully...`);
