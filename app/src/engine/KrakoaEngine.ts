@@ -26,10 +26,9 @@ export default async function krakoa(filePath: string) {
 
   } catch(error: any) {
     if (error instanceof z.ZodError) {
-      console.error('⚠️ Schema mismatch:', JSON.stringify(error.format(), null, 2));
+      console.error(`⚠️ Schema mismatch: ${z.treeifyError(error)}`);
     } else {
-      //const shortMessage = error.message?.substring(0, 200);
-      console.error('⚠️ System error:', error.message);
+      console.error(`⚠️ System error: ${filePath}:${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
     }
   }
 }
