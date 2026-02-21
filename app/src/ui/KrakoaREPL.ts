@@ -1,6 +1,7 @@
 import * as readline from 'readline';
 import { k } from '../engine/KrakoaCompiler.js';
 import krakoa from '../engine/KrakoaEngine.js';
+import { KrakoanRunner, type KrakoanInfo } from '../engine/KrakoaRunner.js';
 
 const SNIPPETS: Record<string, string> = {
   ":fragment"     : "📑",
@@ -33,6 +34,7 @@ const ALIASES = Object.keys(SNIPPETS);
 
 export class KrakoaREPL {
   private buffer = "";
+  private runner?: KrakoanRunner | undefined;
   private rl: readline.Interface;
 
   constructor() {
@@ -79,22 +81,53 @@ export class KrakoaREPL {
     this.rl.setPrompt('>>> ');
 
     if (!finalInput) return this.rl.prompt();
-    if (this.handleCommands(finalInput)) return;
-
-    await this.execute(finalInput);
+    if (await this.handleCommands(finalInput)) return;
+    
+    this.runner = this.runner ?? await this.execute(finalInput);
     this.rl.prompt();
   }
 
-  private handleCommands(input: string): boolean {
-    if (input === '.exit') process.exit(0);
-    if (input === '.clear') {
-      console.clear();
-      console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
-      this.rl.prompt();
-      return true;
+  private async handleCommands(input: string): Promise<boolean> {
+    const [cmd, ...args] = input.split(' ');
+
+    switch (cmd) {
+      case '.load':
+        await this.loadProgram(args[0]); // Încarcă un .kts
+        return true;
+      
+      case '.s':
+      case '.step':
+        if (this.runner) {
+          this.renderDebugFrame();
+        } else {
+          console.log("❌ No program loaded. Use .load <path>");
+        }
+        return true;
+
+      case '.p':
+      case '.print':
+        if (this.runner) {
+          console.log("🧠 Context:", JSON.stringify(this.runner.Context, null, 2));
+          this.rl.prompt();
+        }
+        return true;
+      
+      case '.clear':
+        console.clear();
+        this.rl.prompt();
+        return true;
+
+      case '.exit':
+        return process.exit(0);
     }
 
     return false;
+  }
+
+  private async loadProgram(arg0?: string): Promise<void> {
+    if (!arg0) throw new Error("No program path has been suplied");
+    this.runner = new KrakoanRunner(await krakoa(arg0.slice(1, -1)));
+    this.rl.prompt();
   }
 
   private async execute(input: string) {
@@ -103,7 +136,63 @@ export class KrakoaREPL {
     `, false);
 
     if (krakoanProgram) {
-      console.log(JSON.stringify(krakoanProgram, null, 2));
+      return new KrakoanRunner(krakoanProgram);
     }
+  }
+
+  private renderDebugFrame(windowSize: number = 5) {
+    const { Program, InstructionPointer } = this.runner ?? {};
+
+    function printLine(currAddr: number) {
+      if (!Program) return;
+      if (!Program?.code[currAddr]) return;
+
+      const activeInst = Program.code[currAddr];
+      const isCurrent = currAddr === InstructionPointer;
+      const pointer = isCurrent ? "  ==>  " : "       ";
+      const opcode = activeInst.type.padEnd(10);
+      const params = Object.entries(activeInst.params)
+        .filter(([k]) => k !== 'timestamp') // scoatem zgomotul
+        .map(([k, v]) => {
+          const val = typeof v === 'number' ? `"${Program.text[v]}"` : JSON.stringify(v);
+          return `${k}: ${val}`;
+        })
+        .join(', ') || 'anon';
+
+      if (isCurrent) {
+        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${params})\x1b[0m\n`);
+      } else {
+        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${params})`);
+      }
+    }
+
+    function renderWindow() {
+      if (!Program || typeof InstructionPointer == 'undefined') return;
+
+      const half = Math.floor(windowSize / 2);
+      const totalInstructions = Object.keys(Program.code).length;
+
+      let start = Math.max(0, InstructionPointer - half);
+      let end   = Math.min(totalInstructions - 1, start + windowSize - 1);
+
+      if (end - start < windowSize - 1) {
+        start = Math.max(0, end - windowSize + 1);
+      }
+
+      console.log(`--- 🪟 WINDOW: [${start.toString().padStart(3,'0')} - ${end.toString().padStart(3,'0')}] ---`);
+      console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program.symbols).length}]\n`);
+      for (let index = start; index <= end; index++) {
+        printLine(index);
+      }
+    }
+    
+    if (Program) {
+      this.runner?.fetch();
+      process.stdout.write('\u001b[2J\u001b[0;0H');
+      console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
+      renderWindow();
+    }
+
+    this.rl.prompt();
   }
 }
