@@ -282,13 +282,23 @@ function peg$parse(input, options) {
     return [head, ...tail.map(t => t[3])];
   }
   function peg$f6(root, members) {
-      return `${root}::${members}`;
+    return {
+      kind: "reference",
+      original: `@${root.id}::${members.join("::")}`,
+      segments: [root.id, ...members],
+      root: root.id,
+      target: members[members.length - 1]
+    };
   }
   function peg$f7(head, tail) {
-    return [head, ...tail.map(t => t[1])].join("::");
+    return [head, ...tail.map(t => t[1])];
   }
-  function peg$f8(id) {    return `@${id}`;  }
-  function peg$f9(id) {    return `#${id}`;  }
+  function peg$f8(id) {    
+       return { kind: "reference", type: "at", id: id }; 
+  }
+  function peg$f9(id) {    
+       return { kind: "reference", type: "hash", id: id }; 
+  }
   function peg$f10(content) {
     const raw = content.trim();
     const isComplex = raw.startsWith(String.fromCharCode(123));
