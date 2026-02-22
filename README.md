@@ -1,13 +1,13 @@
 # 🧬 GenesisAI: Krakoa Nexus DSL
 
 * **Status:** Phase 1 - Ingestion & Architecture
-* **Core:** SurrealDB + TypeScript + LLM Distillation
+* **Core:** TypeScript + LLM Distillation
 
 ## 🌌 What does this project serves for?
 
 GenesisAI is a technological framework created to solve the "Narrative Contextual Drift" of LLM (Large Language Models). In environments where the lore becomes too dense to be manually managed, GenesisAI uses a Domain Specific Language (DSL) based on sigils / tokens to transform the complex lore descriptions into immutable graph-based data structures.
 
-Inspired by Krakoan Language (Marvel X-Men Series written by Jonathan Hickman) and Wuxing Mythology, this project allows an LLM to "think" in entity terms (Multi-Agent Personas like Phoenix Force/Zhuque, Xuanwu, or in-lore characters) and store them in a Knowledge Database based on SurrealDB as interconnected nodes (a Knowledge Graph).
+Inspired by Krakoan Language (Marvel X-Men Series written by Jonathan Hickman) and Wuxing Mythology, this project allows an LLM to "think" in entity terms (Multi-Agent Personas like Phoenix Force/Zhuque, Xuanwu, or in-lore characters) and store them in a Vector Knowledge Database.
 
 ## 🧱 Why do we need this framework?
 
@@ -19,7 +19,7 @@ The GenesisAI project introduces something called as "Semantical Determinism". I
 
 ### The control mechanism
 
-This system is not just a way to write prompts (Prompt Engineering), but a way for data governance. Using SurrealDB we transform the complex lore from a simple list of facts to a living network of knowledge, where every entity has a unique signature and an immutable logic.
+This system is not just a way to write prompts (Prompt Engineering), but a way for data governance. Using Vector Knowledge Databases we transform the complex lore from a simple list of facts to a living network of knowledge, where every entity has a unique signature and an immutable logic.
 
 ## 🔣 The Cypher Codex (The Technical Specification of Tokens)
 
@@ -109,7 +109,7 @@ To be sure the data integrity is maintained we use a reference implementation. I
 
 ### **1st Week: Defining the lexicon and grammar**
 
-* [x] Configuring the development environment (Node.js + TypeScript + Docker + SurrealDB + Ollama)
+* [x] Configuring the development environment (Node.js + TypeScript + Docker + Ollama)
 * [x] Finalizing the DSL Specification (The Cypher Codex)
 * [X] Implementing the parser using a Pushdown Automaton (PDA/PEG/Peggy.js) using TypeScript.
 
@@ -119,7 +119,7 @@ To be sure the data integrity is maintained we use a reference implementation. I
 * [X] The sintactic validation of the `.krakoa` scripts.
 * [ ] Building the Virtual Machine for executing Krakoan Scripts.
 
-### **3rd Week: Integrating with SurrealDB (The Ledger)**
+### **3rd Week: Integrating with a Vector Knowledge Database (The Ledger)**
 
 * [ ] Building the active connection between the Parser and the Database.
 * [ ] Implementing the "Inheritance" logic and "Graph Linking" directly into SurrealQL.
@@ -129,21 +129,21 @@ To be sure the data integrity is maintained we use a reference implementation. I
 
 * [ ] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to adapt their answers based on the Krakoa Nexus DSL definitions.
 * [ ] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to write JSON Objects based on the Intermediate Representation (IR) of Krakoa Nexus DSL.
-* [ ] Testing the first close loop: Prompt -> DSL IR -> SurrealDB -> Context RAG.
+* [ ] Testing the first close loop: Prompt -> DSL IR -> Context RAG -> Answer.
 * [ ] Testing the first interaction with an AI Agent.
 
 ## 🏁 Conclusion
 
 > _"GenesisAI isn't just an experiment, is a conceptual framework for creative anchoring of LLMs via mathematical structuring. In an technical era of Generative Artificial Intelligence, the true power doesn't resides into generating more text, but in holding the **control over the knowledge**."_
 
-## ⚠️ A Note on the DSL Purpose (Human-to-Machine Bridge)
+### ⚠️ A Note on the DSL Purpose (Human-to-Machine Bridge)
 
 It is vital to distinguish the role of the **Krakoa Nexus DSL**.
 Contrary to popular belief in prompt engineering, the LLM is **NOT** required to write in the DSL itself. Instead:
 
 1. **Human Perspective:** The DSL is for **us, the Architects**. It allows us to define complex agents, lore, and logic using a compact, semantic syntax without the overhead of manual Prompt Engineering or verbose JSON writing.
 2. **AI Perspective:** The LLM is instructed to output **JSON Objects** based on the DSL's _Intermediate Representation (IR)_.
-3. **The Result:** The DSL acts as a high-level "Source Code" that humans write, which then gets compiled/transpiled into a format that the LLM understands and the Database (SurrealDB) can ingest.
+3. **The Result:** The DSL acts as a high-level "Source Code" that humans write, which then gets compiled/transpiled into a format that the LLM understands and the Database can ingest.
 
 > _"We don't ask the AI to be a poet; we ask it to be a Data Modeler. The DSL is the blueprint we provide to ensure it doesn't lose its way."_
 
@@ -155,7 +155,7 @@ At first glance, GenesisAI looks very similar to frameworks like **CharacterAI**
 Instead of using "magic prompts" inside a black box, GenesisAI uses **Krakoa Nexus DSL**. We are building a digital "nervous system" where identity is coded, persistent, and governed by strict grammar rules, not by the LLM's own fluctuations.
 
 2. **Graph Persistence vs. Ephemerality (vs. CrewAI):**
-CrewAI focuses on executing predefined tasks (fire and forget). GenesisAI is based on **SurrealDB**, where every agent is a node in a Knowledge Graph. Every relationship, memory, and state persists and emerges over time, building an immutable digital lore.
+CrewAI focuses on executing predefined tasks (fire and forget). GenesisAI is based on **Vector Knowledge Databases**, where every agent is a node in a Knowledge Graph. Every relationship, memory, and state persists and emerges over time, building an immutable digital lore.
 
 3. **The "Quiet Council" Protocol (The Jonathan Hickman Principle):**
 This is the supreme differentiator. Inspired by the _"Quiet Council"_ from X-Men, GenesisAI doesn't encourage conflict or competition between agents for the "best" answer.
@@ -163,3 +163,38 @@ This is the supreme differentiator. Inspired by the _"Quiet Council"_ from X-Men
     * **Synergy, not Battle Royale:** The final result is a harmony of perspectives where individual identities are not erased, but used to reach a Single Multi-Faceted Answer.
 
 > **GenesisAI is not about forcing the AI to work for you; it is about building a digital society governed by consensus and logic.**
+
+## 🧠 Cognitive Strategy: Deterministic RAG & Ingestion
+
+GenesisAI moves away from "blind search" RAG. Instead, it uses the **Krakoa Nexus DSL** to orchestrate how knowledge is retrieved and linked.
+
+### Structured Semantic References (JSON-AST)
+
+Instead of volatile string parsing, internal references are stored as structured JSON objects. This allows the Virtual Machine to perform high-speed "Linking" between the current execution context and the Knowledge Vault without re-parsing overhead.
+
+* **Format:** `{"scope": "self", "path": ["Skills", "Combat"]}`
+
+### Programmable RAG Links (`🔗` Instruction)
+
+Knowledge retrieval is a first-class citizen in the DSL. Using the `:link` or specialized `🔗` instructions, the developer defines _when_ and _what_ the agent should remember.
+
+* **Deterministic Fetch:** The VM triggers a semantic search in the **Vector Knowledge Database** only when the Instruction Pointer (IP) hits a link node.
+* **Contextual Anchoring:** Search results are injected directly into the Agent's "Working Memory," preventing the LLM from hallucinating outside its provided lore.
+
+### The Multimodal Ingestion Pipeline (The "Librarian")
+
+To feed the Knowledge Vault, GenesisAI uses a specialized pipeline:
+
+* **Docling (IBM):** Used to transform PDFs, HTML, and even comic book panels (via OCR/Layout analysis) into clean, hierarchical Markdown.
+* **Browserless Integration:** A headless Chrome orchestration that allows the framework to "browse" and download real-time data or lore updates without the limitations of static APIs.
+* **Vectorization:** Processed data is fragmented, vectorized, and stored with metadata that points back to the original Krakoan Script.
+
+### Augmented Krakoan DSL Integration for RAG
+
+The framework treats **Knowledge as a Programmable Resource**. Using a unified `:ingest` command, the developer can hydrate the Agent's memory from multiple sources, ensuring that the AI has access to both static lore and real-time information.
+
+* **Static Internal Fragments:** You can define `:data` blocks directly in the Krakoan script. At runtime, the `:ingest` command maps these local references to the **Vector Knowledge Database**.
+  * _Use case:_ Defining Wade’s core personality or "unbreakable" rules of the world.
+* **Dynamic Web Acquisition:** By providing a URL or a search query as a parameter to the `:ingest` instruction, the VM triggers the **Multimodal Pipeline** (Puppeteer + Docling).
+  * _Use case:_ Wade needs to "learn" about a real-world event or a new comic book release before responding.
+* **Deterministic Persistence:** Once ingested, information is no longer just "text in a prompt." It becomes a persistent vector node. The agent doesn't "search the internet" every time it speaks; it queries its own **curated memory** through the `:link` instruction.

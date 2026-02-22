@@ -27,7 +27,12 @@ const SNIPPETS: Record<string, string> = {
   ":trigger"      : "➔",
   ":anchor"       : "⚓",
   ":signal"       : "📡",
-  ":speech"       : "💬"
+  ":speech"       : "💬",
+  ".st"           : ".step",
+  ".loa"          : ".load 'src/programs/Deadpool.kts'",
+  ".pri"          : ".print",
+  ".cl"           : ".clear",
+  ".ex"           : ".exit"
 };
 
 const ALIASES = Object.keys(SNIPPETS);
@@ -94,8 +99,6 @@ export class KrakoaREPL {
       case '.load':
         await this.loadProgram(args[0]); // Încarcă un .kts
         return true;
-      
-      case '.s':
       case '.step':
         if (this.runner) {
           this.renderDebugFrame();
@@ -103,15 +106,12 @@ export class KrakoaREPL {
           console.log("❌ No program loaded. Use .load <path>");
         }
         return true;
-
-      case '.p':
       case '.print':
         if (this.runner) {
           console.log("🧠 Context:", JSON.stringify(this.runner.Context, null, 2));
           this.rl.prompt();
         }
         return true;
-      
       case '.clear':
         console.clear();
         this.rl.prompt();
