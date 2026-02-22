@@ -29,7 +29,7 @@ const SNIPPETS: Record<string, string> = {
   ":signal"       : "📡",
   ":speech"       : "💬",
   ".st"           : ".step",
-  ".loa"          : ".load 'src/programs/Deadpool.kts'",
+  ".loa"          : ".load 'src/programs/Deadpool.ksl'",
   ".pri"          : ".print",
   ".cl"           : ".clear",
   ".ex"           : ".exit"
