@@ -1,17 +1,5 @@
 import { z } from "zod";
 
-const ReferenceSchema = z.union([z.string().startsWith("@"), z.string().startsWith("#")]).transform((val) => {
-  const cleanPath = val.slice(1);
-  const segments = cleanPath.split("::");
-  return {
-    kind: "reference",
-    original: val,
-    segments: segments,
-    root: segments[0],
-    target: segments[segments.length - 1]
-  };
-});
-
 const BaseKrakoanNodeSchema = z.object({
   type: z.string(),
   params: z.record(z.string(), z.any())

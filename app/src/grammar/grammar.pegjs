@@ -81,7 +81,6 @@ MemberSelection
     return [head, ...tail.map(t => t[3])];
   }
 
-
 PathElement
   = ReferencePath
   / Reference
@@ -90,16 +89,29 @@ PathElement
 
 ReferencePath
   = root:Reference "::" members:PathSequence {
-      return `${root}::${members}`;
-    }
+    return {
+      kind: "reference",
+      original: `@${root.id}::${members.join("::")}`,
+      segments: [root.id, ...members],
+      root: root.id,
+      target: members[members.length - 1]
+    };
+  }
 
 PathSequence
   = head:Identifier tail:("::" Identifier)* {
-    return [head, ...tail.map(t => t[1])].join("::");
+    return [head, ...tail.map(t => t[1])];
   }
 
-Reference = "@" id:Identifier { return `@${id}`; }
-Tag       = "#" id:Identifier { return `#${id}`; }
+Reference 
+  = "@" id:Identifier { 
+    return { kind: "reference", type: "at", id: id }; 
+  }
+
+Tag 
+  = "#" id:Identifier { 
+    return { kind: "reference", type: "hash", id: id }; 
+  }
 
 LambdaExpression
   = _ "λ" _ "(" content:LambdaBody ")" _ {
