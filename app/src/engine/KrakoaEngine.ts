@@ -9,7 +9,7 @@ export default async function krakoa(input: string, isPath: boolean = true) {
 
     if (isPath) {
       const fileName = path.basename(input);
-      if (!fileName.endsWith('.kts')) return;
+      if (!fileName.endsWith('.ksl')) return;
 
       const result = await esbuild.build({
         entryPoints: [input],
@@ -24,7 +24,7 @@ export default async function krakoa(input: string, isPath: boolean = true) {
     }
 
     if (!rawSourceCode) {
-      throw new Error("The .kts file must have an export default k`...`");
+      throw new Error("The .ksl file must have an export default k`...`");
     }
 
     const rawModule = await import(`data:text/javascript;base64,${Buffer.from(rawSourceCode).toString('base64')}`);
