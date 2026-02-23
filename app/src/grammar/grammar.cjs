@@ -39,14 +39,45 @@
     return SNIPPETS[normalizedInput] || inputKey
   }
 
-  function buildNode(type, body, params) {
+  function solveOriginalReference(members) {
+    let solvedSegments = [];
+
+    for (const member of members) { // Folosim for...of pentru a lua valorile direct
+      if (typeof member === 'string') {
+        solvedSegments.push(member);
+      } 
+      else if (typeof member === 'object' && member !== null) {
+        if (member.root) {
+          solvedSegments.push(member.root);
+        } 
+        else if (member.segments) {
+          solvedSegments.push(solveOriginalReference(member.segments));
+        }
+      }
+    }
+
+    return solvedSegments.join('::');
+  }
+
+  function buildReference(symbol, kind, root, members) {
+    const path = solveOriginalReference(members);
+    return {
+      root: root,
+      kind: kind,
+      original: `${symbol}${root}${path ? '::' + path : ''}`,
+      segments: [root, ...members.map(m => (typeof m === 'object' ? m.root : m))],
+      target: members.length > 0 
+                ? (typeof members[members.length - 1] === 'object' ? members[members.length - 1].root : members[members.length - 1]) 
+                : root
+    };
+  }
+
+  function buildNode(type, body, tags, params) {
     return {
       type,
-      body, 
-      params: {
-        timestamp: Date.now(),
-        ...params,
-      }
+      body,
+      tags,
+      params,
     };
   }
 
@@ -270,10 +301,10 @@ function peg$parse(input, options) {
   return [head, ...tail.map(t => t[1])];
   }
   function peg$f2(target) {
-      return buildNode(":trigger", [target], {});
+      return buildNode(":trigger", [target], [], {});
   }
   function peg$f3(symbol, params, tags, body) {    
-       return buildNode(symbol.type, body || [], { ...params, tags: tags || [] });
+       return buildNode(symbol.type, body || [], tags || [], params);
   }
   function peg$f4(selection) {
     return selection;
@@ -282,13 +313,17 @@ function peg$parse(input, options) {
     return [head, ...tail.map(t => t[3])];
   }
   function peg$f6(root, members) {
-      return `${root}::${members}`;
+    return buildReference("@", root.kind, root.root, members);
   }
   function peg$f7(head, tail) {
-    return [head, ...tail.map(t => t[1])].join("::");
+    return [head, ...tail.map(t => t[1])];
   }
-  function peg$f8(id) {    return `@${id}`;  }
-  function peg$f9(id) {    return `#${id}`;  }
+  function peg$f8(id) {    
+       return buildReference('@', 'reference', id, []); 
+  }
+  function peg$f9(id) {    
+       return buildReference('#', 'hashtag', id, []);
+  }
   function peg$f10(content) {
     const raw = content.trim();
     const isComplex = raw.startsWith(String.fromCharCode(123));
@@ -323,7 +358,7 @@ function peg$parse(input, options) {
   function peg$f15(icon) {
     const normalizedIcon = normalize(icon);
     const isKnown = ALIASES.some(k => k === normalizedIcon);
-    return buildNode(normalizedIcon, [], {});
+    return buildNode(normalizedIcon, [], [], {});
   }
   function peg$f16(text) {    return text;  }
   let peg$currPos = options.peg$currPos | 0;
@@ -696,7 +731,10 @@ function peg$parse(input, options) {
     }
     if (s1 !== peg$FAILED) {
       s2 = peg$parse_();
-      s3 = peg$parsePathElement();
+      s3 = peg$parseReferencePath();
+      if (s3 === peg$FAILED) {
+        s3 = peg$parsePathElement();
+      }
       if (s3 !== peg$FAILED) {
         s4 = [];
         s5 = peg$currPos;
@@ -710,7 +748,10 @@ function peg$parse(input, options) {
         }
         if (s7 !== peg$FAILED) {
           s8 = peg$parse_();
-          s9 = peg$parsePathElement();
+          s9 = peg$parseReferencePath();
+          if (s9 === peg$FAILED) {
+            s9 = peg$parsePathElement();
+          }
           if (s9 !== peg$FAILED) {
             s6 = [s6, s7, s8, s9];
             s5 = s6;
@@ -735,7 +776,10 @@ function peg$parse(input, options) {
           }
           if (s7 !== peg$FAILED) {
             s8 = peg$parse_();
-            s9 = peg$parsePathElement();
+            s9 = peg$parseReferencePath();
+            if (s9 === peg$FAILED) {
+              s9 = peg$parsePathElement();
+            }
             if (s9 !== peg$FAILED) {
               s6 = [s6, s7, s8, s9];
               s5 = s6;
@@ -778,14 +822,11 @@ function peg$parse(input, options) {
   function peg$parsePathElement() {
     let s0;
 
-    s0 = peg$parseReferencePath();
+    s0 = peg$parseReference();
     if (s0 === peg$FAILED) {
-      s0 = peg$parseReference();
+      s0 = peg$parseTag();
       if (s0 === peg$FAILED) {
-        s0 = peg$parseTag();
-        if (s0 === peg$FAILED) {
-          s0 = peg$parseIdentifier();
-        }
+        s0 = peg$parseIdentifier();
       }
     }
 
@@ -830,7 +871,7 @@ function peg$parse(input, options) {
     let s0, s1, s2, s3, s4, s5;
 
     s0 = peg$currPos;
-    s1 = peg$parseIdentifier();
+    s1 = peg$parsePathElement();
     if (s1 !== peg$FAILED) {
       s2 = [];
       s3 = peg$currPos;
@@ -842,7 +883,7 @@ function peg$parse(input, options) {
         if (peg$silentFails === 0) { peg$fail(peg$e6); }
       }
       if (s4 !== peg$FAILED) {
-        s5 = peg$parseIdentifier();
+        s5 = peg$parsePathElement();
         if (s5 !== peg$FAILED) {
           s4 = [s4, s5];
           s3 = s4;
@@ -865,7 +906,7 @@ function peg$parse(input, options) {
           if (peg$silentFails === 0) { peg$fail(peg$e6); }
         }
         if (s4 !== peg$FAILED) {
-          s5 = peg$parseIdentifier();
+          s5 = peg$parsePathElement();
           if (s5 !== peg$FAILED) {
             s4 = [s4, s5];
             s3 = s4;

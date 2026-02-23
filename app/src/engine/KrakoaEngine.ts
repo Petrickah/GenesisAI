@@ -17,7 +17,7 @@ export default async function krakoa(input: string, isPath: boolean = true) {
         write: false,
         format: 'esm',
         platform: 'node',
-        loader: { '.kts': 'ts' }
+        loader: { '.ksl': 'ts' }
       });
 
       rawSourceCode = result.outputFiles[0]?.text || '';
