@@ -1,11 +1,14 @@
 import { KrakoanNodeSchema, KrakoanProgramSchema, KrakoanTagsSchema, type KrakoanInstruction, type KrakoanNode, type KrakoanProgram } from '../schema/krakoa.schema.js';
 import parser from '../grammar/grammar.cjs';
 
-export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgram {
-  const raw = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
-  const ast = parser.parse(raw);
-  
-  return compile(KrakoanNodeSchema.array().parse(ast));
+export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgram | undefined {
+  const input = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
+  try {
+    const ast = parser.parse(input);  
+    return compile(KrakoanNodeSchema.array().parse(ast));
+  } catch(error: any) {
+    console.error(`⚠️ System error: ${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
+  }
 }
 
 function compile(fullAST: KrakoanNode[]): KrakoanProgram {

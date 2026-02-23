@@ -2,7 +2,7 @@ import type { KrakoanProgram, KrakoanInstruction } from "../schema/krakoa.schema
 
 export interface KrakoanInfo {
   address: number,
-  instruction: KrakoanInstruction ,
+  instruction: KrakoanInstruction,
   next: number
 };
 
@@ -13,9 +13,37 @@ export class KrakoanRunner {
 
   constructor(public Program: KrakoanProgram | undefined) {
     this.reset();
+    this.IsRunning = true;
   }
 
-  public fetch() : KrakoanInfo | undefined {
+  public step(): boolean {
+    if (!this.Program || !this.IsRunning || this.InstructionPointer === undefined) return false;
+
+    const rawInstruction = this.fetch();
+    const instruction = this.decode(rawInstruction?.instruction);
+    this.execute(instruction);
+    // if (rawInstruction && rawInstruction.next && rawInstruction.next !== -1) {
+    //   this.InstructionPointer = rawInstruction.next;
+    // } else {
+    //   this.IsRunning = false;
+    // }
+    return true;
+  }
+
+  private execute(instr?: KrakoanInstruction) {
+    if (!instr) return;
+    switch (instr.type) {
+      case ':state':
+        this.Context[instr.id!] = instr.params.value;
+        console.log(`[EXEC]: State '${instr.id}' updated to:`, instr.params.value);
+        break;
+      // case ':lambda':
+      //   const fn = new Function('ctx', node.params.code);
+      //   break;
+    }
+  }
+
+  private fetch() : KrakoanInfo | undefined {
     if (!this.Program) return undefined;
     if (typeof this.InstructionPointer === 'undefined') return undefined;
     
@@ -37,23 +65,24 @@ export class KrakoanRunner {
     }
   }
 
-  public decode(value: any): any {
-    if (!this.Program) return undefined;
-    if (value && typeof value === 'number') {
+  public decode(value: any): KrakoanInstruction | undefined {
+    if (!value || !this.Program) return undefined;
+    if (typeof value === 'number') {
       return this.Program.text[value];
     }
-    if (value && typeof value === 'object') {
-      const newObject: Record<string, string> = {};
+    if (typeof value === 'object') {
+      const newObject: Record<string, any> = {};
       for (let key in value) {
         newObject[key] = this.decode(value[key]);
       }
-      return newObject;
+      return newObject as KrakoanInstruction;
     }
     return value;
   }
 
   public reset() {
     this.InstructionPointer = this.Program?.entry;
+    this.IsRunning = false;
     this.Context = {};
   }
 }

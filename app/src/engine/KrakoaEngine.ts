@@ -28,7 +28,7 @@ export default async function krakoa(input: string, isPath: boolean = true) {
     }
 
     const rawModule = await import(`data:text/javascript;base64,${Buffer.from(rawSourceCode).toString('base64')}`);
-    return KrakoanProgramSchema.parse(rawModule.default);
+    return rawModule.default ? KrakoanProgramSchema.parse(rawModule.default) : undefined;
   } catch(error: any) {
     if (error instanceof z.ZodError) {
       console.error(`⚠️ Schema mismatch: ${z.treeifyError(error)}`);

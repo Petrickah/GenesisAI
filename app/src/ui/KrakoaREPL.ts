@@ -102,7 +102,7 @@ export class KrakoaREPL {
         return true;
       case '.step':
         if (this.runner) {
-          this.renderDebugFrame();
+          this.handleStep();
         } else {
           console.log("❌ No program loaded. Use .load <path>");
         }
@@ -128,6 +128,7 @@ export class KrakoaREPL {
   private async loadProgram(arg0?: string): Promise<void> {
     if (!arg0) throw new Error("No program path has been suplied");
     this.runner = new KrakoanRunner(await krakoa(arg0.slice(1, -1)));
+    this.runner.IsRunning = true;
     this.rl.prompt();
   }
 
@@ -141,9 +142,35 @@ export class KrakoaREPL {
     }
   }
 
-  private renderDebugFrame(windowSize: number = 5) {
+  private handleStep() {
     if (!this.runner) return;
-    const { Program, InstructionPointer } = this.runner ?? {};
+    const hasMore = this.runner.step();
+    this.renderDebugFrame();
+    if (!hasMore) {
+      console.log("\x1b[33m[SYSTEM]: Program execution halted (End of stack).\x1b[0m");
+    }
+    this.rl.prompt();
+  }
+
+  private renderDebugFrame(windowSize: number = 5) {
+    const { Program, InstructionPointer, Context } = this.runner ?? {};
+    if (!this.runner || !Program || typeof InstructionPointer === 'undefined') return;
+
+    console.clear();
+    console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
+    console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program?.symbols ?? {}).length}]`);
+
+    if (Context) {
+      const ctxKeys = Object.keys(Context);
+      if (ctxKeys.length > 0) {
+        const ctxView = ctxKeys.map(k => `${k}: ${Context[k]}`).join(' | ');
+        console.log(`\x1b[90m[ Context: ${ctxView} ]\x1b[0m\n`);
+      } else {
+        console.log(`\x1b[90m[ Context: empty ]\x1b[0m\n`);
+      }
+    }
+    
+    renderWindow(this.runner, windowSize);
 
     function printLine(runner: KrakoanRunner, currAddr: number) {
       if (!Program) return;
@@ -152,7 +179,7 @@ export class KrakoaREPL {
       const activeInst = runner.decode(Program.code[currAddr]) as KrakoanInstruction;
       const isCurrent = currAddr === InstructionPointer;
       const pointer = isCurrent ? "  ==>  " : "       ";
-      const opcode = activeInst.type.toString().padEnd(10);
+      const opcode = activeInst.type?.toString().padEnd(10);
 
       function processParamsList(value: any): string {
         if (typeof value === 'object') {
@@ -174,7 +201,7 @@ export class KrakoaREPL {
       }
     }
 
-    function renderWindow(runner: KrakoanRunner) {
+    function renderWindow(runner: KrakoanRunner, windowSize: number = 5) {
       if (!Program || typeof InstructionPointer == 'undefined') return;
       
       const half = Math.floor(windowSize / 2);
@@ -192,15 +219,5 @@ export class KrakoaREPL {
         printLine(runner, index);
       }
     }
-    
-    if (Program) {
-      this.runner.fetch();
-      console.clear();
-      console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
-      console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program?.symbols ?? {}).length}]\n`);
-      renderWindow(this.runner);
-    }
-
-    this.rl.prompt();
   }
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const PoolValue = z.union([z.string(), z.number()]);
+const PoolValue = z.union([z.string(), z.number(), z.undefined()]);
 
 export const KrakoanTagsSchema = z.object({
   root: PoolValue,
@@ -21,7 +21,7 @@ export const KrakoanNodeSchema = z.object({
 export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
 
 const KrakoanInstructionSchema = z.object({
-  id: PoolValue.optional(),
+  id: PoolValue,
   type: PoolValue, // Acum acceptă și indexul din textPool
   timestamp: z.number().optional().default(Date.now()),
   params: z.record(z.string(), z.any()).default({}),
