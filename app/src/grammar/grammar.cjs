@@ -301,7 +301,7 @@ function peg$parse(input, options) {
   return [head, ...tail.map(t => t[1])];
   }
   function peg$f2(target) {
-      return buildNode(":trigger", [target], [], {});
+    return buildNode(":trigger", [target], [], {});
   }
   function peg$f3(symbol, params, tags, body) {    
        return buildNode(symbol.type, body || [], tags || [], params);
@@ -330,11 +330,8 @@ function peg$parse(input, options) {
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
       type: ":lambda",
-      params: {
-        code: finalCode,
-        isComplex: isComplex,
-      },
-      body: []
+      code: finalCode,
+      isComplex: isComplex,
     };
   }
   function peg$f11(e) {

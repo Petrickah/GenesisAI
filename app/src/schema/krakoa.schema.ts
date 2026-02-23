@@ -9,14 +9,14 @@ export const KrakoanTagsSchema = z.object({
   segments: z.array(z.union([PoolValue, z.any()])).default([]),
   target: z.union([PoolValue, z.any()]).default({}),
   address: z.number().optional()
-}).passthrough();
+});
 
 export const KrakoanNodeSchema = z.object({
   type: PoolValue,
   params: z.record(z.string(), z.any()),
   body: z.array(z.lazy((): z.ZodObject => KrakoanNodeSchema)),
   tags: z.array(KrakoanTagsSchema).optional(),
-}).passthrough()
+});
 
 export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
 
@@ -27,7 +27,7 @@ const KrakoanInstructionSchema = z.object({
   params: z.record(z.string(), z.any()).default({}),
   tags: z.array(KrakoanTagsSchema).optional(),
   next: z.array(z.number())
-}).passthrough();
+});
 
 export const KrakoanProgramSchema = z.object({
   entry: z.number(),

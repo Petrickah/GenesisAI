@@ -2,6 +2,7 @@ import * as readline from 'readline';
 import { k } from '../engine/KrakoaCompiler.js';
 import krakoa from '../engine/KrakoaEngine.js';
 import { KrakoanRunner, type KrakoanInfo } from '../engine/KrakoaRunner.js';
+import type { KrakoanInstruction } from '../schema/krakoa.schema.js';
 
 const SNIPPETS: Record<string, string> = {
   ":fragment"     : "📑",
@@ -141,56 +142,63 @@ export class KrakoaREPL {
   }
 
   private renderDebugFrame(windowSize: number = 5) {
+    if (!this.runner) return;
     const { Program, InstructionPointer } = this.runner ?? {};
 
-    function printLine(currAddr: number) {
+    function printLine(runner: KrakoanRunner, currAddr: number) {
       if (!Program) return;
       if (!Program?.code[currAddr]) return;
 
-      const activeInst = Program.code[currAddr];
+      const activeInst = runner.decode(Program.code[currAddr]) as KrakoanInstruction;
       const isCurrent = currAddr === InstructionPointer;
       const pointer = isCurrent ? "  ==>  " : "       ";
       const opcode = activeInst.type.toString().padEnd(10);
-      const params = Object.entries(activeInst.params)
-        .filter(([k]) => k !== 'timestamp') // scoatem zgomotul
-        .map(([k, v]) => {
-          const val = typeof v === 'number' ? `"${Program.text[v]}"` : JSON.stringify(v);
-          return `${k}: ${val}`;
-        })
-        .join(', ') || 'anon';
+
+      function processParamsList(value: any): string {
+        if (typeof value === 'object') {
+          let paramsList: string[] = [];
+          for (let key in value) {
+            paramsList.push(`${key}: ${processParamsList(value[key])}`);
+          }
+          return paramsList.join(', ') ?? 'empty';
+        }
+        return `"${value}"`;
+      }
+
+      const paramsList = processParamsList(activeInst.params) || 'anon';
 
       if (isCurrent) {
-        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${params})\x1b[0m\n`);
+        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})\x1b[0m\n`);
       } else {
-        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${params})`);
+        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})`);
       }
     }
 
-    function renderWindow() {
+    function renderWindow(runner: KrakoanRunner) {
       if (!Program || typeof InstructionPointer == 'undefined') return;
-
+      
       const half = Math.floor(windowSize / 2);
       const totalInstructions = Object.keys(Program.code).length;
-
+      
       let start = Math.max(0, InstructionPointer - half);
       let end   = Math.min(totalInstructions - 1, start + windowSize - 1);
-
+      
       if (end - start < windowSize - 1) {
         start = Math.max(0, end - windowSize + 1);
       }
-
+      
       console.log(`--- 🪟 WINDOW: [${start.toString().padStart(3,'0')} - ${end.toString().padStart(3,'0')}] ---`);
-      console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program.symbols).length}]\n`);
       for (let index = start; index <= end; index++) {
-        printLine(index);
+        printLine(runner, index);
       }
     }
     
     if (Program) {
-      this.runner?.fetch();
-      process.stdout.write('\u001b[2J\u001b[0;0H');
+      this.runner.fetch();
+      console.clear();
       console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
-      renderWindow();
+      console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program?.symbols ?? {}).length}]\n`);
+      renderWindow(this.runner);
     }
 
     this.rl.prompt();

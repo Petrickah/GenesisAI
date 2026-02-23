@@ -144,11 +144,8 @@ LambdaExpression
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
       type: ":lambda",
-      params: {
-        code: finalCode,
-        isComplex: isComplex,
-      },
-      body: []
+      code: finalCode,
+      isComplex: isComplex,
     };
   }
 
