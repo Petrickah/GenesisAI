@@ -150,7 +150,7 @@ export class KrakoaREPL {
       const activeInst = Program.code[currAddr];
       const isCurrent = currAddr === InstructionPointer;
       const pointer = isCurrent ? "  ==>  " : "       ";
-      const opcode = activeInst.type.padEnd(10);
+      const opcode = activeInst.type.toString().padEnd(10);
       const params = Object.entries(activeInst.params)
         .filter(([k]) => k !== 'timestamp') // scoatem zgomotul
         .map(([k, v]) => {
