@@ -1,21 +1,33 @@
 import { z } from "zod";
 
-const BaseKrakoanNodeSchema = z.object({
-  type: z.string(),
-  params: z.record(z.string(), z.any())
-})
+const PoolValue = z.union([z.string(), z.number()]);
 
-export const KrakoanNodeSchema = BaseKrakoanNodeSchema.extend({
+export const KrakoanTagsSchema = z.object({
+  root: PoolValue,
+  kind: PoolValue,
+  original: PoolValue,
+  segments: z.array(z.union([PoolValue, z.any()])).default([]),
+  target: z.union([PoolValue, z.any()]).default({}),
+  address: z.number().optional()
+}).passthrough();
+
+export const KrakoanNodeSchema = z.object({
+  type: PoolValue,
+  params: z.record(z.string(), z.any()),
   body: z.array(z.lazy((): z.ZodObject => KrakoanNodeSchema)),
-});
+  tags: z.array(KrakoanTagsSchema).optional(),
+}).passthrough()
 
 export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
 
 const KrakoanInstructionSchema = z.object({
-  type: z.string(),
+  id: PoolValue.optional(),
+  type: PoolValue, // Acum acceptă și indexul din textPool
+  timestamp: z.number().optional().default(Date.now()),
   params: z.record(z.string(), z.any()).default({}),
+  tags: z.array(KrakoanTagsSchema).optional(),
   next: z.array(z.number())
-});
+}).passthrough();
 
 export const KrakoanProgramSchema = z.object({
   entry: z.number(),

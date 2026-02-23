@@ -33,14 +33,45 @@
     return SNIPPETS[normalizedInput] || inputKey
   }
 
-  function buildNode(type, body, params) {
+  function solveOriginalReference(members) {
+    let solvedSegments = [];
+
+    for (const member of members) { // Folosim for...of pentru a lua valorile direct
+      if (typeof member === 'string') {
+        solvedSegments.push(member);
+      } 
+      else if (typeof member === 'object' && member !== null) {
+        if (member.root) {
+          solvedSegments.push(member.root);
+        } 
+        else if (member.segments) {
+          solvedSegments.push(solveOriginalReference(member.segments));
+        }
+      }
+    }
+
+    return solvedSegments.join('::');
+  }
+
+  function buildReference(symbol, kind, root, members) {
+    const path = solveOriginalReference(members);
+    return {
+      root: root,
+      kind: kind,
+      original: `${symbol}${root}${path ? '::' + path : ''}`,
+      segments: [root, ...members.map(m => (typeof m === 'object' ? m.root : m))],
+      target: members.length > 0 
+                ? (typeof members[members.length - 1] === 'object' ? members[members.length - 1].root : members[members.length - 1]) 
+                : root
+    };
+  }
+
+  function buildNode(type, body, tags, params) {
     return {
       type,
-      body, 
-      params: {
-        timestamp: Date.now(),
-        ...params,
-      }
+      body,
+      tags,
+      params,
     };
   }
 }}
@@ -58,8 +89,8 @@ Node
 
 ActionPath
   = "➔" _ target:ValidTarget {
-      return buildNode(":trigger", [target], {});
-    }
+    return buildNode(":trigger", [target], [], {});
+  }
 
 ValidTarget
   = Instruction
@@ -68,7 +99,7 @@ ValidTarget
 
 Instruction
   = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";"? _ { 
-    return buildNode(symbol.type, body || [], { ...params, tags: tags || [] });
+    return buildNode(symbol.type, body || [], tags || [], params);
   }
 
 TagList
@@ -77,40 +108,33 @@ TagList
   }
 
 MemberSelection
-  = "[" _ head:PathElement tail:(_ "," _ PathElement)* _ "]" {
+  = "[" _ head:(ReferencePath / PathElement) tail:(_ "," _ (ReferencePath / PathElement))* _ "]" {
     return [head, ...tail.map(t => t[3])];
   }
 
 PathElement
-  = ReferencePath
-  / Reference
+  = Reference
   / Tag
   / Identifier
 
 ReferencePath
   = root:Reference "::" members:PathSequence {
-    return {
-      kind: "reference",
-      original: `@${root.id}::${members.join("::")}`,
-      segments: [root.id, ...members],
-      root: root.id,
-      target: members[members.length - 1]
-    };
+    return buildReference("@", root.kind, root.root, members);
   }
 
 PathSequence
-  = head:Identifier tail:("::" Identifier)* {
+  = head:PathElement tail:("::" PathElement)* {
     return [head, ...tail.map(t => t[1])];
   }
 
 Reference 
   = "@" id:Identifier { 
-    return { kind: "reference", type: "at", id: id }; 
+    return buildReference('@', 'reference', id, []); 
   }
 
 Tag 
   = "#" id:Identifier { 
-    return { kind: "reference", type: "hash", id: id }; 
+    return buildReference('#', 'hashtag', id, []);
   }
 
 LambdaExpression
@@ -161,7 +185,7 @@ Symbol
   = icon:EmojiSequence {
     const normalizedIcon = normalize(icon);
     const isKnown = ALIASES.some(k => k === normalizedIcon);
-    return buildNode(normalizedIcon, [], {});
+    return buildNode(normalizedIcon, [], [], {});
   }
 
 EmojiSequence 
