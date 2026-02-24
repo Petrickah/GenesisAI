@@ -17,6 +17,7 @@
     "🚀": ":action",
     "🎭": ":intent",
     "🔗": ":link",
+    "🔃": ":jump",
     "🔱": ":authority",
     "🤝": ":alliance",
     "⚔️": ":conflict",

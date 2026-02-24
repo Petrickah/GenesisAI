@@ -22,11 +22,12 @@ export class KrakoanRunner {
     const rawInstruction = this.fetch();
     const instruction = this.decode(rawInstruction?.instruction);
     this.execute(instruction);
-    // if (rawInstruction && rawInstruction.next && rawInstruction.next !== -1) {
-    //   this.InstructionPointer = rawInstruction.next;
-    // } else {
-    //   this.IsRunning = false;
-    // }
+
+    if (rawInstruction && rawInstruction.next !== -1) {
+      this.InstructionPointer = rawInstruction.next;
+    } else {
+      this.IsRunning = false;
+    }
     return true;
   }
 
@@ -55,13 +56,12 @@ export class KrakoanRunner {
     }
     
     const prevInstruction = this.InstructionPointer;
-    const nextInstruction = (currInstruction.next.length > 0) ? currInstruction.next[0] : -1;
-    this.InstructionPointer = (nextInstruction !== -1) ? nextInstruction : undefined;
+    const nextInstruction = currInstruction.next[0];
 
     return {
       address: prevInstruction,
       instruction: this.decode(currInstruction) as KrakoanInstruction,
-      next: this.InstructionPointer ?? -1
+      next: nextInstruction ?? -1
     }
   }
 

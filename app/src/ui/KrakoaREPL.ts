@@ -22,6 +22,7 @@ const SNIPPETS: Record<string, string> = {
   ":action"       : "🚀",
   ":intent"       : "🎭",
   ":link"         : "🔗",
+  ":jump"         : "🔃",
   ":authority"    : "🔱",
   ":alliance"     : "🤝",
   ":conflict"     : "⚔️",
