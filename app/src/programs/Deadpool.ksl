@@ -23,7 +23,7 @@ export default k/*ts*/`
     ➔ 🧬("Healing Factor", mode: "Passive") {
         ⚓("Health Check", condition: λ(ctx["Health"] < 50)) 🔑 [@"NEX-AGT-WADE"::#Health] {
             🚀("Regenerate Health", power: "Auto");
-        }
+        };
     };
     ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer)) 🔑 [@"NEX-CON_RESL"::#PsychologicalBuffer] {
         🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
@@ -31,7 +31,8 @@ export default k/*ts*/`
         ➔ 💬("Fourth Wall Breach", to: "Architect") {
             🎭("Jesting", breakWall: "true");
             📂("Message") 🔑 [@"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized"];
-        }
+        };
+        🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT-WADE"::"Psychological Buffer"];
     };
 };
 `;

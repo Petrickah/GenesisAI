@@ -77,30 +77,52 @@
   }
 }}
 
-Start = _ program:NodeList _ { return program; }
+Start = _ program:ExpressionList _ { return program; }
 
-NodeList = head:Node tail:(_ Node)* {
-  return [head, ...tail.map(t => t[1])];
-}
+ExpressionList 
+  = head:(ActionPath / Expression) ";" tail:(_ (ActionPath / Expression) _ ";")* {
+    const rest = tail.map(element => element[1]);
+    return [head, ...rest];
+  }
 
-Node 
-  = ActionPath 
-  / Instruction 
-  / ReferencePath
+Expression
+  = ex:(Instruction / PathElement) {
+    return ex
+  }
 
 ActionPath
-  = "➔" _ target:ValidTarget {
+  = "➔" _ target:Expression _ {
     return buildNode(":trigger", [target], [], {});
   }
 
-ValidTarget
-  = Instruction
-  / ReferencePath
-  / Reference
-
 Instruction
-  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";"? _ { 
+  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ { 
     return buildNode(symbol.type, body || [], tags || [], params);
+  }
+
+Symbol
+  = icon:EmojiSequence {
+    const normalizedIcon = normalize(icon);
+    const isKnown = ALIASES.some(k => k === normalizedIcon);
+    return buildNode(normalizedIcon, [], [], {});
+  }
+
+EmojiSequence 
+  = $(([\uD800-\uDBFF][\uDC00-\uDFFF] / [^\s\w\(\)\[\]\{\};,:])[\uFE00-\uFE0F\u200D]*)
+
+ParameterList
+  = _ "(" _ head:Identifier tail:(_ "," _ Parameter)* _ ")" _ {
+    const params = { id: head };
+    tail.forEach(element => {
+      const p = element[3];
+      Object.assign(params, p);
+    });
+    return params;
+  }
+
+Parameter
+  = _ label:Identifier ":" value:(Identifier / LambdaExpression) {
+    return { [label]: value }
   }
 
 TagList
@@ -117,6 +139,7 @@ PathElement
   = Reference
   / Tag
   / Identifier
+  / LambdaExpression
 
 ReferencePath
   = root:Reference "::" members:PathSequence {
@@ -138,6 +161,10 @@ Tag
     return buildReference('#', 'hashtag', id, []);
   }
 
+Identifier
+  = String
+  / $([a-zA-Z0-9_]+)
+
 LambdaExpression
   = _ "λ" _ "(" content:LambdaBody ")" _ {
     const raw = content.trim();
@@ -151,53 +178,18 @@ LambdaExpression
   }
 
 LambdaBody
-  = $([^()]* ("(" LambdaBody ")")* [^()]*) 
-
-Expression
-  = _ e:(ActionPath / LambdaExpression / Instruction / ReferencePath / Reference) _ ";"? _ {
-    return e;
-  }
+  = $([^()]* ("(" LambdaBody ")")* [^()]*)
 
 Body
-  = _ "{" _ head:Expression? tail:(_ Expression)* _ "}" _ {
-    const results = head ? [head] : [];
-    return results.concat(tail.map(t => t[1]));
+  = _ "{" _ results:ExpressionList _ "}" _ {
+    return results;
   }
-
-ParameterList
-  = _ "(" _ head:Identifier tail:(_ "," _ Parameter)* _ ")" _ {
-    const params = { id: head };
-    tail.forEach(element => {
-      const p = element[3];
-      Object.assign(params, p);
-    });
-    return params;
-  }
-
-Parameter
-  = _ label:Identifier ":" value:(LambdaExpression / String / PathElement) {
-    return { [label]: value }
-  }
-
-Symbol
-  = icon:EmojiSequence {
-    const normalizedIcon = normalize(icon);
-    const isKnown = ALIASES.some(k => k === normalizedIcon);
-    return buildNode(normalizedIcon, [], [], {});
-  }
-
-EmojiSequence 
-  = $(([\uD800-\uDBFF][\uDC00-\uDFFF] / [^\s\w\(\)\[\]\{\};,:])[\uFE00-\uFE0F\u200D]*)
-  
-Identifier
-  = String
-  / $([a-zA-Z0-9_]+)
-
-TextContent
-  = $((!"\"" .)*)
 
 String
   = _ "\"" text:TextContent "\"" _ { return text; }
+
+TextContent
+  = $((!"\"" .)*)
 
 _ "Whitespace"
   = ([ \t\n\r] / Comment)*
