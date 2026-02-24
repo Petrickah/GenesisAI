@@ -32,7 +32,7 @@ export default k/*ts*/`
             🎭("Jesting", breakWall: "true");
             📂("Message") 🔑 [@"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized"];
         };
-        🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT-WADE"::"Psychological Buffer"];
+        ➔ 🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT-WADE"::"Psychological Buffer"];
     };
 };
 `;

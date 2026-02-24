@@ -45,11 +45,11 @@
 
     for (const member of members) { // Folosim for...of pentru a lua valorile direct
       if (typeof member === 'string') {
-        solvedSegments.push(member);
+        solvedSegments.push(`"${member}"`);
       } 
       else if (typeof member === 'object' && member !== null) {
         if (member.root) {
-          solvedSegments.push(member.root);
+          solvedSegments.push(`"${member.root}"`);
         } 
         else if (member.segments) {
           solvedSegments.push(solveOriginalReference(member.segments));
@@ -62,10 +62,11 @@
 
   function buildReference(symbol, kind, root, members) {
     const path = solveOriginalReference(members);
+    const finalPath = path ? `::"${path}"` : '';
     return {
       root: root,
       kind: kind,
-      original: `${symbol}${root}${path ? '::' + path : ''}`,
+      original: `${symbol}${root}${finalPath}`,
       segments: [root, ...members.map(m => (typeof m === 'object' ? m.root : m))],
       target: members.length > 0 
                 ? (typeof members[members.length - 1] === 'object' ? members[members.length - 1].root : members[members.length - 1]) 
@@ -352,7 +353,6 @@ function peg$parse(input, options) {
     return {
       type: ":lambda",
       code: finalCode,
-      isComplex: isComplex,
     };
   }
   function peg$f15(results) {

@@ -18,9 +18,10 @@ export const KrakoanNodeSchema = z.object({
   tags: z.array(KrakoanTagsSchema).optional(),
 });
 
+export type KrakoanTags = z.infer<typeof KrakoanTagsSchema>;
 export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
 
-const KrakoanInstructionSchema = z.object({
+export const KrakoanInstructionSchema = z.object({
   id: PoolValue,
   type: PoolValue, // Acum acceptă și indexul din textPool
   timestamp: z.number().optional().default(Date.now()),
@@ -38,3 +39,11 @@ export const KrakoanProgramSchema = z.object({
 
 export type KrakoanProgram = z.infer<typeof KrakoanProgramSchema>;
 export type KrakoanInstruction = z.infer<typeof KrakoanInstructionSchema>;
+
+export const KrakoanInfoSchema = z.object({
+  instruction: KrakoanInstructionSchema,
+  address: z.number().default(-1),
+  next: z.number().default(-1)
+})
+
+export type KrakoanInfo = z.infer<typeof KrakoanInfoSchema>;

@@ -1,7 +1,7 @@
 import * as readline from 'readline';
 import { k } from '../engine/KrakoaCompiler.js';
 import krakoa from '../engine/KrakoaEngine.js';
-import { KrakoanRunner, type KrakoanInfo } from '../engine/KrakoaRunner.js';
+import { KrakoanRunner } from '../engine/KrakoaRunner.js';
 import type { KrakoanInstruction } from '../schema/krakoa.schema.js';
 
 const SNIPPETS: Record<string, string> = {
@@ -103,7 +103,7 @@ export class KrakoaREPL {
         return true;
       case '.step':
         if (this.runner) {
-          this.handleStep();
+          await this.handleStep();
         } else {
           console.log("❌ No program loaded. Use .load <path>");
         }
@@ -143,17 +143,7 @@ export class KrakoaREPL {
     }
   }
 
-  private handleStep() {
-    if (!this.runner) return;
-    const hasMore = this.runner.step();
-    this.renderDebugFrame();
-    if (!hasMore) {
-      console.log("\x1b[33m[SYSTEM]: Program execution halted (End of stack).\x1b[0m");
-    }
-    this.rl.prompt();
-  }
-
-  private renderDebugFrame(windowSize: number = 5) {
+  private async handleStep() {
     const { Program, InstructionPointer, Context } = this.runner ?? {};
     if (!this.runner || !Program || typeof InstructionPointer === 'undefined') return;
 
@@ -161,6 +151,17 @@ export class KrakoaREPL {
     console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
     console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program?.symbols ?? {}).length}]`);
 
+    const hasMore = await this.runner.step();
+    this.renderDebugFrame(this.runner);
+    if (!hasMore) {
+      console.log("\x1b[33m[SYSTEM]: Program execution halted (End of stack).\x1b[0m");
+    }
+    this.rl.prompt();
+  }
+
+  private renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
+    const { Program, InstructionPointer, Context } = runner;
+    
     if (Context) {
       const ctxKeys = Object.keys(Context);
       if (ctxKeys.length > 0) {
@@ -171,16 +172,16 @@ export class KrakoaREPL {
       }
     }
     
-    renderWindow(this.runner, windowSize);
+    renderWindow(runner, windowSize);
 
     function printLine(runner: KrakoanRunner, currAddr: number) {
       if (!Program) return;
       if (!Program?.code[currAddr]) return;
 
-      const activeInst = runner.decode(Program.code[currAddr]) as KrakoanInstruction;
+      const activeInst = runner.decode(Program.code[currAddr]);
       const isCurrent = currAddr === InstructionPointer;
       const pointer = isCurrent ? "  ==>  " : "       ";
-      const opcode = activeInst.type?.toString().padEnd(10);
+      const opcode = activeInst?.type?.toString().padEnd(10);
 
       function processParamsList(value: any): string {
         if (typeof value === 'object') {
@@ -193,12 +194,12 @@ export class KrakoaREPL {
         return `"${value}"`;
       }
 
-      const paramsList = processParamsList(activeInst.params) || 'anon';
+      const paramsList = processParamsList(activeInst?.params) || 'anon';
 
       if (isCurrent) {
-        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})\x1b[0m\n`);
+        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode}(${paramsList})\x1b[0m\n`);
       } else {
-        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})`);
+        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode}(${paramsList})`);
       }
     }
 
