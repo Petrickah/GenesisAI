@@ -20,6 +20,7 @@ export default k/*ts*/`
     📌("Health", value: λ(ctx["MaxHealth"]));
     📌("Current Logic", value: "Neutral Chaos");
     📌("Active Equipment", value: λ(ctx["NEX-AST-WADE_GEAR"])) 🔑 [@"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
+    🛡️("Obiectiv Securizat", level: "High", description: "Supravegheat de Stepford Cuckoos și Magneto.");
     ➔ 🧬("Healing Factor", mode: "Passive") {
         ⚓("Health Check", condition: λ(ctx["Health"] < 50)) 🔑 [@"NEX-AGT-WADE"::#Health] {
             🚀("Regenerate Health", power: "Auto");

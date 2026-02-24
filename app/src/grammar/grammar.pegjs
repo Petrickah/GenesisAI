@@ -1,37 +1,9 @@
 {{
-  const SNIPPETS = {
-    "📑": ":fragment",
-    "🧠": ":concept",
-    "👤": ":entity",
-    "📦": ":collection",
-    "📂": ":content",
-    "🧬": ":logic",
-    "🔓": ":asset",
-    "📌": ":state",
-    "🔑": ":tag",
-    "🧩": ":stance",
-    "⌛": ":time",
-    "🛡️": ":shield",
-    "🩺": ":utility",
-    "💉": ":function",
-    "🚀": ":action",
-    "🎭": ":intent",
-    "🔗": ":link",
-    "🔃": ":jump",
-    "🔱": ":authority",
-    "🤝": ":alliance",
-    "⚔️": ":conflict",
-    "➔": ":trigger",
-    "⚓": ":anchor",
-    "📡": ":signal",
-    "💬": ":speech"
-  };
+  const emojiRegex = require('emoji-regex');
 
-  const ALIASES = Object.keys(SNIPPETS).map((inputKey) => normalize(inputKey));
-
-  function normalize(inputKey) {
-    const normalizedInput = inputKey.replace(/\uFE0F/g, "");
-    return SNIPPETS[normalizedInput] || inputKey
+  function getValidEmoji(input) {
+    const match = input.match(emojiRegex());
+    return match ? match[0] : null;
   }
 
   function solveOriginalReference(members) {
@@ -93,7 +65,7 @@ Expression
 
 ActionPath
   = "➔" _ target:Expression _ {
-    return buildNode(":trigger", [target], [], {});
+    return buildNode("➔", [target], [], {});
   }
 
 Instruction
@@ -103,13 +75,18 @@ Instruction
 
 Symbol
   = icon:EmojiSequence {
-    const normalizedIcon = normalize(icon);
-    const isKnown = ALIASES.some(k => k === normalizedIcon);
-    return buildNode(normalizedIcon, [], [], {});
+    return buildNode(icon, [], [], {});
   }
 
 EmojiSequence 
-  = $(([\uD800-\uDBFF][\uDC00-\uDFFF] / [^\s\w\(\)\[\]\{\};,:])[\uFE00-\uFE0F\u200D]*)
+  = chars:$( [^\s\w\(\)\[\]\{\};,:]+ ) {
+    const valid = getValidEmoji(chars);
+    if (valid) {
+      return valid;
+    }
+
+    error("Expected a valid emoji opcode.");
+  }
 
 ParameterList
   = _ "(" _ head:Identifier tail:(_ "," _ Parameter)* _ ")" _ {

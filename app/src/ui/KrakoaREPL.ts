@@ -110,7 +110,7 @@ export class KrakoaREPL {
         return true;
       case '.print':
         if (this.runner) {
-          console.log("🧠 Context:", JSON.stringify(this.runner.Context, null, 2));
+          console.log("🧠 Context:", JSON.stringify(this.runner, null, 2));
           this.rl.prompt();
         }
         return true;

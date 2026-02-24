@@ -182,7 +182,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
       let defaultNext: number = isLastInstruction ? (returnIndex ?? -1) : currentIndex + 1;
 
-      if (activeNode.type === ':trigger' && !returnIndex && firstTriggerIndex === -1) {
+      if (activeNode.type === '➔' && !returnIndex && firstTriggerIndex === -1) {
         firstTriggerIndex = currentIndex;
       }
 
@@ -211,7 +211,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       if (activeNode.body && activeNode.body.length > 0) {
         const bodyStartIndex = instructions.length;
 
-        if (activeNode.type === ':trigger') {
+        if (activeNode.type === '➔') {
           process(activeNode.body, currentIndex); 
           const exitIndex = instructions.length;
           currInstruction.next = [bodyStartIndex, exitIndex];

@@ -1,35 +1,6 @@
-import z from "zod";
-import { KrakoanInfoSchema, type KrakoanInfo, type KrakoanProgram, type KrakoanTags } from "../schema/krakoa.schema.js";
+import { type KrakoanInfo, type KrakoanProgram, type KrakoanTags } from "../schema/krakoa.schema.js";
 
-const SNIPPETS: Record<string, string> = {
-  ":fragment"     : "📑",
-  ":concept"      : "🧠",
-  ":entity"       : "👤",
-  ":collection"   : "📦",
-  ":content"      : "📂",
-  ":logic"        : "🧬",
-  ":asset"        : "🔓",
-  ":state"        : "📌",
-  ":tag"          : "🔑",
-  ":stance"       : "🧩",
-  ":time"         : "⌛",
-  ":shield"       : "🛡️",
-  ":utility"      : "🩺",
-  ":function"     : "💉",
-  ":action"       : "🚀",
-  ":intent"       : "🎭",
-  ":link"         : "🔗",
-  ":jump"         : "🔃",
-  ":authority"    : "🔱",
-  ":alliance"     : "🤝",
-  ":conflict"     : "⚔️",
-  ":trigger"      : "➔",
-  ":anchor"       : "⚓",
-  ":signal"       : "📡",
-  ":speech"       : "💬",
-};
-
-type InstructionOpcode = typeof SNIPPETS[keyof typeof SNIPPETS];
+type InstructionOpcode = string;
 type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Promise<void>;
 
 export class KrakoanRunner {
@@ -146,9 +117,6 @@ export class KrakoanRunner {
         newObject[key] = (key !== "address" && key !== "next") 
           ? this.decode(value[key])
           : value[key];
-        if (key === "type") {
-          newObject[key] = SNIPPETS[newObject[key]] ?? newObject[key];
-        }
       }
       return newObject;
     }
