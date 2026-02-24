@@ -25,7 +25,7 @@ export default k/*ts*/`
             🚀("Regenerate Health", power: "Auto");
         };
     };
-    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer)) 🔑 [@"NEX-CON_RESL"::#PsychologicalBuffer] {
+    ⚓("Psychological Buffer", condition: λ(ctx["PsychologicalBuffer"])) 🔑 [@"NEX-CON_RESL"::#PsychologicalBuffer] {
         🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
         📡("Meta Awareness", target: "System");
         ➔ 💬("Fourth Wall Breach", to: "Architect") {

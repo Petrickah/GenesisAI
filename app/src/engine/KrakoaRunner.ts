@@ -49,7 +49,9 @@ export class KrakoanRunner {
       }
     },
     "📌": async (node, runner) => {
-      runner.Context[node.instruction?.params.id] = node.instruction?.params.value;
+      const { id, value } = node.instruction.params;
+      runner.Context[id] = runner.evalLambda(id, value);
+      console.log(`📌 [State] ${id} set to ${runner.Context[id]} (via Lambda)`);
     },
     "💬": async (node, runner) => {
       console.log(`💬 [Speech]: ${node.instruction?.params.content || node.instruction?.params.id}`);
@@ -57,8 +59,8 @@ export class KrakoanRunner {
     "➔": async (node, runner) => {
       const inst = node.instruction;
       const triggerKey = `trigger_at_${node.address}`
-      const pathPrimary = (inst.next && inst.next.length > 0) ? inst.next[0] : -1;
-      const pathExit = (inst.next && inst.next.length > 1) ? inst.next[1] : -1;
+      const pathPrimary = inst.next[0];
+      const pathExit = inst.next[1];
 
       let state = runner.InternalState[triggerKey] || { cycleCount: 0 };
       if (state.cycleCount < runner.MaxCycles) {
@@ -71,6 +73,15 @@ export class KrakoanRunner {
       runner.InternalState[triggerKey] = state;
       console.log(`➔ [Trigger ID: ${triggerKey}] @${node.address} | Cycle: ${state.cycleCount}/${runner.MaxCycles} | Next: ${node.next}`);
     },
+    "⚓": async (node, runner) => {
+      const condition = runner.evalLambda(node.instruction.params.id, node.instruction.params.condition);
+      
+      if (condition === true) {
+        node.next = node.instruction.next[0] ?? node.next;
+      } else {
+        node.next = node.instruction.next[1] ?? node.next;
+      }
+    }
   };
 
   constructor(public Program: KrakoanProgram | undefined) {
@@ -93,8 +104,23 @@ export class KrakoanRunner {
     return true;
   }
 
+  private evalLambda(id: string, value: any): any {
+    if (value && value.type === ":lambda") {
+      try {
+        const fn = new Function('ctx', value.code);
+        console.log(`🔍 Evaling Lambda for ${id}. Context keys:`, Object.keys(this.Context));
+        return fn(this.Context);
+      } catch (e) {
+        console.error(`❌ Lambda Error for ${id}:`, e);
+        return undefined;
+      }
+    } else {
+      return value;
+    }
+  }
+
   private async execute(node: KrakoanInfo) {
-    const instructionCallback  = node.instruction?.type ? this.InstructionMap[node.instruction?.type] : undefined;
+    const instructionCallback = node.instruction?.type ? this.InstructionMap[node.instruction?.type] : undefined;
     return instructionCallback ? await instructionCallback(node, this) : undefined;
   }
 
@@ -132,6 +158,8 @@ export class KrakoanRunner {
   public reset() {
     this.InstructionPointer = this.Program?.entry;
     this.IsRunning = false;
-    this.Context = {};
+    this.Context = {
+      "MaxHealth": 150
+    };
   }
 }
