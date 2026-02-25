@@ -34,7 +34,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       if (typeof value === 'object') {
         const newObject: any = {};
         for (let k in value) {
-          newObject[k] = process(value[k]);
+          newObject[k] = k !== 'address' ? process(value[k]) : value[k];
         }
         return newObject;
       }
@@ -103,7 +103,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
           newObject[k] = solveReference(value[k]);
         return newObject;
       }
-      
       return value;
     }
 
@@ -157,7 +156,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       );
       if (isTagOnCurrent) {
         console.log(`✅ Step ${i}: Found '${cleanSegment}' as a Tag on current node.`);
-        continue; // Trecem la următorul segment (dacă mai există)
+        continue;
       }
       const nextNode = currentScope.body?.find((node: any) => {
         const nodeId = node.params?.id?.replace(/^[@#]/, '');
@@ -193,10 +192,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         params: activeNode.params,
         tags: activeNode.tags?.map((tag: any) => {
           if (tag.kind === 'reference') {
-            // Validăm semantica: "Are acest drum logică în structura AST?"
-            // Verificăm pornind de la rădăcina programului (bodyNodes original)
             const isValid = verifyReference(tag.segments, fullAST); 
-
             if (!isValid) {
               throw new Error(`Semantic Error: Reference path '@${tag.segments.join('::')}' is unreachable or invalid.`);
             }
@@ -219,7 +215,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         else {
           process(activeNode.body, defaultNext);
           
-          if (activeNode.type === ':anchor') {
+          if (activeNode.type === '⚓') {
             const exitIndex = instructions.length;
             currInstruction.next = [bodyStartIndex, exitIndex];
           } else {
@@ -232,7 +228,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
       if (isLastInstruction) {
         defaultNext = instructions.length;
-        // Și trebuie să actualizăm manual inst.next dacă nu a fost setat de body
         if (!activeNode.body || activeNode.body.length === 0) {
           currInstruction.next = [instructions.length];
         }

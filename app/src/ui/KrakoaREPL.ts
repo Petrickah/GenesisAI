@@ -144,15 +144,15 @@ export class KrakoaREPL {
   }
 
   private async handleStep() {
-    const { Program, InstructionPointer, Context } = this.runner ?? {};
+    const { Program, InstructionPointer } = this.runner ?? {};
     if (!this.runner || !Program || typeof InstructionPointer === 'undefined') return;
 
     console.clear();
     console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
     console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program?.symbols ?? {}).length}]`);
 
-    const hasMore = await this.runner.step();
     this.renderDebugFrame(this.runner);
+    const hasMore = await this.runner.step();
     if (!hasMore) {
       console.log("\x1b[33m[SYSTEM]: Program execution halted (End of stack).\x1b[0m");
     }
@@ -160,19 +160,23 @@ export class KrakoaREPL {
   }
 
   private renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
-    const { Program, InstructionPointer, Context } = runner;
+    const { Program, InstructionPointer, StackPointer, ContextStack } = runner;
+    const currentContext = ContextStack[StackPointer - 1];
 
-    if (Context) {
-      const ctxKeys = Object.keys(Context);
+    if (currentContext) {
+      const ctxKeys = Object.keys(currentContext);
       if (ctxKeys.length > 0) {
-        const ctxView = ctxKeys.map(k => `${k}: ${Context[k]}`).join(' | ');
-        console.log(`\x1b[90m[ Context: ${ctxView} ]\x1b[0m\n`);
+        const ctxView = ctxKeys.map(k => `${k}: ${JSON.stringify(currentContext[k], null, 2)}`).join(' | ');
+        console.log(`\x1b[90m[ Context ${StackPointer - 1}: ${ctxView} ]\x1b[0m\n`);
       } else {
-        console.log(`\x1b[90m[ Context: empty ]\x1b[0m\n`);
+        console.log(`\x1b[90m[ Context ${StackPointer - 1}: empty ]\x1b[0m\n`);
       }
+    } else {
+      console.log(`\x1b[90m[ Context ${StackPointer - 1}: undefined ]\x1b[0m\n`);
     }
     
     renderWindow(runner, windowSize);
+    console.log();
 
     function printLine(runner: KrakoanRunner, currAddr: number) {
       if (!Program) return;
@@ -181,7 +185,7 @@ export class KrakoaREPL {
       const activeInst = runner.decode(Program.code[currAddr]);
       const isCurrent = currAddr === InstructionPointer;
       const pointer = isCurrent ? "  ==>  " : "       ";
-      const opcode = activeInst?.type?.toString().padEnd(10);
+      const opcode = activeInst?.type?.toString();
 
       function processParamsList(value: any): string {
         if (typeof value === 'object') {
@@ -197,9 +201,9 @@ export class KrakoaREPL {
       const paramsList = processParamsList(activeInst?.params) || 'anon';
 
       if (isCurrent) {
-        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode}(${paramsList})\x1b[0m\n`);
+        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})\x1b[0m\n`);
       } else {
-        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode}(${paramsList})`);
+        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})`);
       }
     }
 
