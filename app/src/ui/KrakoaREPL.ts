@@ -159,9 +159,9 @@ export class KrakoaREPL {
   }
 
   private async renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
-    const { Program, Registers, ContextStack } = runner;
+    const { Program, Registers, DataStack: ContextStack } = runner;
 
-    const currContext = ContextStack[Registers['StackPointer']];
+    const currContext = ContextStack[Registers.ESP];
     if (currContext) {
       const hasKeys = Object.keys(currContext).length > 0;
       if (hasKeys) {

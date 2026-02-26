@@ -23,8 +23,6 @@ export default k/*ts*/`
   🔗("NEX-AGT_WADE-EXTEND", mode: "Inheritance") 🔑 [
     @"NEX-CON_RESL",
     @"NEX-CON_RESL"::"WADE_BASE",
-    @"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META",
-    @"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized",
     @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"
   ];
   📌("Health", value: λ(ctx["MaxHealth"]));
