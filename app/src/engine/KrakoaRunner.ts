@@ -9,7 +9,36 @@ export class KrakoanRunner {
   public Registers: ContextType = {};
   public ContextStack: ContextStackType = [];
   public InstructionMap: Record<InstructionOpcode, ExecutionHandler> = {
+    "📌": async (node, runner) => {
+      if (!node) return false;
+      const { id, value } = node.instruction.params;
+      const currentFrame = runner.ContextStack[runner.Registers['BaseStackPointer']];
+      if (currentFrame) {
+        currentFrame[id] = value;
+        console.log(`📌 [Set] ${id} = ${value} in Frame ${runner.Registers['BaseStackPointer']}`);
+      }
+      return true;
+    },
+    "🔗": async (node, runner) => {
+      if (!runner.Program || node?.instruction.id === undefined) return false;
 
+      const { id } = node.instruction;
+      const targetAddr = runner.Program.symbols[id];
+      if (targetAddr !== undefined && targetAddr !== node.address) {
+        const currentFrame = runner.ContextStack[runner.Registers['BaseStackPointer']];
+        runner.Registers["IP"] = node.next;
+
+        if (currentFrame) {
+          currentFrame["__retAddr"] = node.next; 
+        }
+        runner.Registers["IP"] = targetAddr;
+        console.log(`🚀 [Link] Jumping from ${node.address} to ${targetAddr}`);
+        return true;
+      }
+
+      console.warn(`⚠️ [Link] Invalid jump target for ID: ${id}`);
+      return false;
+    }
   };
 
   constructor(public Program: KrakoanProgram ) {
@@ -17,7 +46,7 @@ export class KrakoanRunner {
   }
 
   public async step(): Promise<boolean> {
-    if (!this.Registers["IsRunning"]) return false;
+    if (!this.Program || this.Registers["Status"] !== 'RUNNING') return false;
 
     const __raw = this.fetch();
     if (!__raw) return false;
@@ -26,13 +55,15 @@ export class KrakoanRunner {
 
     if (!await this.execute(__raw)) {
       console.error(`❌ Instruction Error for ${__raw.address}`);
-      return false;
     }
-
-    if (__raw.next !== -1) {
-      this.Registers["IP"] = __raw.next;
-    } else {
-      this.Registers["IsRunning"] = false;
+    
+    const lastInstruction = Object.keys(this.Program?.code).length;
+    if (this.Registers["IP"] === __raw.address) {
+      if (__raw.next < lastInstruction) {
+        this.Registers["IP"] = __raw.next;
+      } else {
+        this.Registers["Status"] = 'HALTED';
+      }
     }
 
     return true;
@@ -102,9 +133,14 @@ export class KrakoanRunner {
   public reset() {
     if (this.Program === null) return;
     this.Registers['IP'] = this.Program.entry;
-    this.Registers['IsRunning'] = true;
+    this.Registers['Status'] = 'RUNNING';
+    this.ContextStack = [];
+    
+    if (this.ContextStack.length === 0) {
+      this.ContextStack.push({ metadata: { name: "ROOT_CONTEXT" } });
+    }
+
     this.Registers['StackPointer'] = this.ContextStack.length - 1;
     this.Registers['BaseStackPointer'] = this.Registers['StackPointer'];
-    this.ContextStack = [];
   }
 }
