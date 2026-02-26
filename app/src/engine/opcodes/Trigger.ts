@@ -48,7 +48,7 @@ export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
     }
 
     runner.Registers.BSP = parent.__BSP;
-    runner.Registers.IP  = parent[triggerName].__retAddress;
+    runner.Registers.IP  = parent[parent.__trigger].__retAddress;
     return true;
   }
 

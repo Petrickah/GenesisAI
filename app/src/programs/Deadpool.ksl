@@ -20,7 +20,7 @@ export default k/*ts*/`
 };
 
 ➔ 👤("NEX-AGT_WADE") {
-  🔗("NEX-AGT_WADE-EXTEND", mode: "Inheritance") 🔑 [
+  ➔ 🔗("NEX-AGT_WADE-EXTEND", mode: "Inheritance") 🔑 [
     @"NEX-CON_RESL",
     @"NEX-CON_RESL"::"WADE_BASE",
     @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"
