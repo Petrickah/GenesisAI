@@ -33,6 +33,7 @@ export default k/*ts*/`
     ⚓ ("Health Check", condition: λ(ctx["Health"] < 50)) {
       🚀("Regenerate Health", power: "Auto");
     };
+    🔗("Healing Factor Done", mode: "Return");
   };
   ⚓("Psychological Buffer", condition: λ(ctx["Tags"]["PsychologicalBuffer"])) {
     🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
@@ -40,8 +41,10 @@ export default k/*ts*/`
     ➔ 💬("Fourth Wall Breach", to: "Architect") {
       🎭("Jesting", breakWall: "true");
       📂("Message", content: λ(cts["Chimichanga Optimized"]));
+      🔗("Speech Done", mode: "Return");
     };
     ➔ 🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT_WADE"::"Psychological Buffer"];
   };
+  🔗("NEX-AGT_WADE-RETURN", mode: "Return");
 };
 `;

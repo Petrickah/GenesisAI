@@ -15,7 +15,7 @@ export const KrakoanNodeSchema = z.object({
   type: PoolValue,
   params: z.record(z.string(), z.any()),
   body: z.array(z.lazy((): z.ZodObject => KrakoanNodeSchema)),
-  tags: z.array(KrakoanTagsSchema).optional(),
+  tags: z.array(KrakoanTagsSchema).default([]),
 });
 
 export type KrakoanTags = z.infer<typeof KrakoanTagsSchema>;

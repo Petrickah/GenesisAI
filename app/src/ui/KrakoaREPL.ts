@@ -165,9 +165,9 @@ export class KrakoaREPL {
     if (currContext) {
       const hasKeys = Object.keys(currContext).length > 0;
       if (hasKeys) {
-        console.log(`\x1b[90m Context: [ ${JSON.stringify(currContext, null, 2)} ]\x1b[0m\n`);
+        console.log(`\x1b[90mContext: [ ${JSON.stringify(currContext, null, 2)} ]\x1b[0m\n`);
       } else {
-        console.log(`\x1b[90m Context: [ empty ]\x1b[0m\n`);
+        console.log(`\x1b[90mContext: [ empty ]\x1b[0m\n`);
       }
     }
     
