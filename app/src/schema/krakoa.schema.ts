@@ -6,8 +6,8 @@ export const KrakoanTagsSchema = z.object({
   root: PoolValue,
   kind: PoolValue,
   original: PoolValue,
+  target: PoolValue,
   segments: z.array(z.union([PoolValue, z.any()])).default([]),
-  target: z.union([PoolValue, z.any()]).default({}),
   address: z.number().optional()
 });
 

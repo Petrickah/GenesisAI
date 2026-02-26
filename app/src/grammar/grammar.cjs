@@ -9,7 +9,7 @@
 
   function getValidEmoji(input) {
     const match = input.match(emojiRegex());
-    return match ? match[0] : null;
+    return match ? match[0] : input;
   }
 
   function solveOriginalReference(members) {
@@ -272,8 +272,8 @@ function peg$parse(input, options) {
   function peg$f2(ex) {
     return ex
   }
-  function peg$f3(target) {
-    return buildNode("➔", [target], [], {});
+  function peg$f3(params, target) {
+    return buildNode("➔", [target], [], params || {});
   }
   function peg$f4(symbol, params, tags, body) {    
        return buildNode(symbol.type, body || [], tags || [], params);
@@ -287,7 +287,7 @@ function peg$parse(input, options) {
       return valid;
     }
 
-    error("Expected a valid emoji opcode.");
+    error(`Expected symbol "${chars}" is not a valid emoji opcode.`);
   }
   function peg$f7(head, tail) {
     const params = { id: head };
@@ -624,23 +624,27 @@ function peg$parse(input, options) {
   }
 
   function peg$parseActionPath() {
-    let s0, s1, s2, s3, s4;
+    let s0, s1, s2, s3, s4, s5;
 
     s0 = peg$currPos;
+    s1 = peg$parseParameterList();
+    if (s1 === peg$FAILED) {
+      s1 = null;
+    }
     if (input.charCodeAt(peg$currPos) === 10132) {
-      s1 = peg$c1;
+      s2 = peg$c1;
       peg$currPos++;
     } else {
-      s1 = peg$FAILED;
+      s2 = peg$FAILED;
       if (peg$silentFails === 0) { peg$fail(peg$e1); }
     }
-    if (s1 !== peg$FAILED) {
-      s2 = peg$parse_();
-      s3 = peg$parseExpression();
-      if (s3 !== peg$FAILED) {
-        s4 = peg$parse_();
+    if (s2 !== peg$FAILED) {
+      s3 = peg$parse_();
+      s4 = peg$parseExpression();
+      if (s4 !== peg$FAILED) {
+        s5 = peg$parse_();
         peg$savedPos = s0;
-        s0 = peg$f3(s3);
+        s0 = peg$f3(s1, s4);
       } else {
         peg$currPos = s0;
         s0 = peg$FAILED;

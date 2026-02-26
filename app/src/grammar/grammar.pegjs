@@ -3,7 +3,7 @@
 
   function getValidEmoji(input) {
     const match = input.match(emojiRegex());
-    return match ? match[0] : null;
+    return match ? match[0] : input;
   }
 
   function solveOriginalReference(members) {
@@ -64,8 +64,8 @@ Expression
   }
 
 ActionPath
-  = "➔" _ target:Expression _ {
-    return buildNode("➔", [target], [], {});
+  = params:ParameterList? "➔" _ target:Expression _ {
+    return buildNode("➔", [target], [], params || {});
   }
 
 Instruction
@@ -85,7 +85,7 @@ EmojiSequence
       return valid;
     }
 
-    error("Expected a valid emoji opcode.");
+    error(`Expected symbol "${chars}" is not a valid emoji opcode.`);
   }
 
 ParameterList
