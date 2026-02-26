@@ -66,7 +66,16 @@ export class KrakoanRunner {
         console.log(`🔃 [Jump] Jumped to ${targetId} at "${reference.original}":${reference.address}`);
       }
     },
+type ContextType = Record<string, any>;
+type ContextStackType = Array<ContextType>;
+type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Promise<boolean>;
+
+export class KrakoanRunner {
+  public Registers: ContextType = {};
+  public ContextStack: ContextStackType = [];
+  public InstructionMap: Record<InstructionOpcode, ExecutionHandler> = {
     "📌": async (node, runner) => {
+      if (!node) return false;
       const { id, value } = node.instruction.params;
       const currentContext = runner.ContextStack[runner.StackPointer - 1];
       if (currentContext) {
@@ -89,10 +98,12 @@ export class KrakoanRunner {
         node.next = pathPrimary ?? node.next;
       } else {
         node.next = pathExit ?? node.next;
+      const currentFrame = runner.ContextStack[runner.Registers['BaseStackPointer']];
+      if (currentFrame) {
+        currentFrame[id] = value;
+        console.log(`📌 [Set] ${id} = ${value} in Frame ${runner.Registers['BaseStackPointer']}`);
       }
-
-      runner.InternalState[triggerKey] = state;
-      console.log(`➔ [Trigger ID: ${triggerKey}] @${node.address} | Cycle: ${state.cycleCount}/${runner.MaxCycles} | Next: ${node.next}`);
+      return true;
     },
     "⚓": async (node, runner) => {
       const { id, condition } = node.instruction.params;
@@ -100,28 +111,55 @@ export class KrakoanRunner {
         node.next = node.instruction.next[0] ?? node.next;
       } else {
         node.next = node.instruction.next[1] ?? node.next;
+    "🔗": async (node, runner) => {
+      if (!runner.Program || node?.instruction.id === undefined) return false;
+
+      const { id } = node.instruction;
+      const targetAddr = runner.Program.symbols[id];
+      if (targetAddr !== undefined && targetAddr !== node.address) {
+        const currentFrame = runner.ContextStack[runner.Registers['BaseStackPointer']];
+        runner.Registers["IP"] = node.next;
+
+        if (currentFrame) {
+          currentFrame["__retAddr"] = node.next; 
+        }
+        runner.Registers["IP"] = targetAddr;
+        console.log(`🚀 [Link] Jumping from ${node.address} to ${targetAddr}`);
+        return true;
       }
+
+      console.warn(`⚠️ [Link] Invalid jump target for ID: ${id}`);
+      return false;
     }
   };
 
-  constructor(public Program: KrakoanProgram | undefined) {
+  constructor(public Program: KrakoanProgram ) {
     this.reset();
-    this.IsRunning = true;
   }
 
   public async step(): Promise<boolean> {
-    if (!this.Program || !this.IsRunning || this.InstructionPointer === undefined) return false;
+    if (!this.Program || this.Registers["Status"] !== 'RUNNING') return false;
 
-    const rawInstruction = this.fetch();
-    rawInstruction.instruction = this.decode(rawInstruction?.instruction);
-    await this.execute(rawInstruction);
+    const __raw = this.fetch();
+    if (!__raw) return false;
 
-    if (rawInstruction && rawInstruction.next !== -1) {
-      this.InstructionPointer = rawInstruction.next;
-    } else {
-      this.IsRunning = false;
+    __raw.instruction = await this.decode(__raw.instruction);
+
+    if (!await this.execute(__raw)) {
+      console.error(`❌ Instruction Error for ${__raw.address}`);
+    }
+    
+    const lastInstruction = Object.keys(this.Program?.code).length;
+    if (this.Registers["IP"] === __raw.address) {
+      if (__raw.next < lastInstruction) {
+        this.Registers["IP"] = __raw.next;
+      } else {
+        this.Registers["Status"] = 'HALTED';
+      }
     }
     return this.IsRunning;
+
+    return true;
   }
 
   private evalLambda(id: string, value: any): any {
@@ -142,6 +180,8 @@ export class KrakoanRunner {
         const result = fn(safeContext)
         console.log(`🔍 Evaling Lambda for ${id}. Context keys: ${Object.keys(safeContext)} Result: ${result}`);
         return result;
+        console.log(`🔍 Evaling Lambda for ${id}. Context keys:`, Object.keys({}));
+        return fn({});
       } catch (e) {
         console.error(`❌ Lambda Error for ${id}:`, e);
         return undefined;
@@ -151,32 +191,45 @@ export class KrakoanRunner {
     }
   }
 
-  private async execute(node: KrakoanInfo) {
-    const instructionCallback = node.instruction?.type ? this.InstructionMap[node.instruction?.type] : undefined;
-    return instructionCallback ? await instructionCallback(node, this) : undefined;
+  private async execute(node: KrakoanInfo) : Promise<boolean> {
+    if (typeof node?.instruction.type !== 'string') {
+      return false;
+    }
+    
+    const { type } = node.instruction;
+    const callback = this.InstructionMap[type];
+    if (callback === undefined) {
+      return false;
+    }
+
+    return callback(node, this);
   }
 
   private fetch() : KrakoanInfo {
-    const currInstruction = this.Program!.code[this.InstructionPointer!]!;
-    const prevInstruction = this.InstructionPointer!;
-    const nextInstruction = currInstruction?.next[0];
-
-    return {
-      address: prevInstruction,
-      instruction: currInstruction,
-      next: nextInstruction ?? -1
+    if (this.Program !== null) {
+      const __currIP = this.Registers["IP"] as number;
+      const currInstruction = this.Program.code[__currIP];
+      if (currInstruction !== undefined) {
+        const __nextIP = currInstruction.next[0] ?? -1;
+        return {
+          next   : __nextIP,
+          address: __currIP,
+          instruction: currInstruction,
+        }
+      }
     }
+    return null;
   }
 
-  public decode(value: any): any {
-    if (!value || !this.Program) return;
+  public async decode(value: any): Promise<any> {
+    if (value === null || value === undefined || !this.Program) return;
     if (typeof value === 'number') return this.Program.text[value];
-    if (Array.isArray(value)) return value.map(item => this.decode(item));
+    if (Array.isArray(value)) return value.map(async item => await this.decode(item));
     if (typeof value === 'object') {
       const newObject: Record<string, any> = {};
       for (let key in value) {
         newObject[key] = (key !== "address" && key !== "next") 
-          ? this.decode(value[key])
+          ? await this.decode(value[key])
           : value[key];
       }
       return newObject;
@@ -188,5 +241,16 @@ export class KrakoanRunner {
     this.InstructionPointer = this.Program?.entry;
     this.IsRunning = false;
     this.ContextStack = [];
+    if (this.Program === null) return;
+    this.Registers['IP'] = this.Program.entry;
+    this.Registers['Status'] = 'RUNNING';
+    this.ContextStack = [];
+    
+    if (this.ContextStack.length === 0) {
+      this.ContextStack.push({ metadata: { name: "ROOT_CONTEXT" } });
+    }
+
+    this.Registers['StackPointer'] = this.ContextStack.length - 1;
+    this.Registers['BaseStackPointer'] = this.Registers['StackPointer'];
   }
 }

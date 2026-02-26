@@ -129,7 +129,6 @@ export class KrakoaREPL {
   private async loadProgram(arg0?: string): Promise<void> {
     if (!arg0) throw new Error("No program path has been suplied");
     this.runner = new KrakoanRunner(await krakoa(arg0.slice(1, -1)));
-    this.runner.IsRunning = true;
     this.rl.prompt();
   }
 
@@ -144,12 +143,12 @@ export class KrakoaREPL {
   }
 
   private async handleStep() {
-    const { Program, InstructionPointer } = this.runner ?? {};
-    if (!this.runner || !Program || typeof InstructionPointer === 'undefined') return;
+    const { Program, Registers } = this.runner ?? {};
+    if (!this.runner || !Program || !Registers) return;
 
     console.clear();
     console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
-    console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program?.symbols ?? {}).length}]`);
+    console.log(`[ IP: ${Registers['IP'] ?? 'HALTED'} | Status: ${Registers['Status'] ?? 'HALTED'} | Symbols: ${Object.keys(Program.symbols).length}]`);
 
     this.renderDebugFrame(this.runner);
     const hasMore = await this.runner.step();
@@ -170,6 +169,16 @@ export class KrakoaREPL {
         console.log(`\x1b[90m[ Context ${StackPointer - 1}: ${ctxView} ]\x1b[0m\n`);
       } else {
         console.log(`\x1b[90m[ Context ${StackPointer - 1}: empty ]\x1b[0m\n`);
+  private async renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
+    const { Program, Registers, ContextStack } = runner;
+
+    const currContext = ContextStack[Registers['StackPointer']];
+    if (currContext) {
+      const hasKeys = Object.keys(currContext).length > 0;
+      if (hasKeys) {
+        console.log(`\x1b[90m Context: [ ${JSON.stringify(currContext, null, 2)} ]\x1b[0m\n`);
+      } else {
+        console.log(`\x1b[90m Context: [ empty ]\x1b[0m\n`);
       }
     } else {
       console.log(`\x1b[90m[ Context ${StackPointer - 1}: undefined ]\x1b[0m\n`);
@@ -177,13 +186,14 @@ export class KrakoaREPL {
     
     renderWindow(runner, windowSize);
     console.log();
+    await renderWindow(runner, windowSize);
 
-    function printLine(runner: KrakoanRunner, currAddr: number) {
+    async function printLine(runner: KrakoanRunner, currAddr: number) {
       if (!Program) return;
       if (!Program?.code[currAddr]) return;
 
-      const activeInst = runner.decode(Program.code[currAddr]);
-      const isCurrent = currAddr === InstructionPointer;
+      const activeInst = await runner.decode(Program.code[currAddr]) as KrakoanInstruction | undefined;
+      const isCurrent = currAddr === Registers['IP'];
       const pointer = isCurrent ? "  ==>  " : "       ";
       const opcode = activeInst?.type?.toString();
 
@@ -207,13 +217,13 @@ export class KrakoaREPL {
       }
     }
 
-    function renderWindow(runner: KrakoanRunner, windowSize: number = 5) {
-      if (!Program || typeof InstructionPointer == 'undefined') return;
+    async function renderWindow(runner: KrakoanRunner, windowSize: number = 5) {
+      if (!Program) return;
       
       const half = Math.floor(windowSize / 2);
       const totalInstructions = Object.keys(Program.code).length;
       
-      let start = Math.max(0, InstructionPointer - half);
+      let start = Math.max(0, Registers['IP'] - half);
       let end   = Math.min(totalInstructions - 1, start + windowSize - 1);
       
       if (end - start < windowSize - 1) {
@@ -222,7 +232,7 @@ export class KrakoaREPL {
       
       console.log(`--- 🪟 WINDOW: [${start.toString().padStart(3,'0')} - ${end.toString().padStart(3,'0')}] ---`);
       for (let index = start; index <= end; index++) {
-        printLine(runner, index);
+        await printLine(runner, index);
       }
     }
   }
