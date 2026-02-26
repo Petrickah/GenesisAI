@@ -77,11 +77,25 @@ export class KrakoanRunner {
     
     const { type } = node.instruction;
     const callback = this.InstructionMap[type];
-    if (callback === undefined) {
-      return false;
+    const result = callback ? await callback(node, this) : true;
+
+    if (result) {
+      const currentBSP = this.Registers.BSP;
+      const parentContext = this.DataStack[currentBSP];
+  
+      const isValidTrigger = node 
+        && parentContext
+        && parentContext.__trigger 
+        && parentContext.__retAddress === (node.address - 1);
+
+      if (isValidTrigger && !parentContext.__isExecuting) {
+        this.Registers.IP = parentContext.__retAddress;
+      }
+
+      return true;
     }
 
-    return callback(node, this);
+    return false;
   }
 
   private fetch() : KrakoanInfo {

@@ -17,6 +17,7 @@ export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
         '__retAddress': next[1],
       },
       '__retAddress': node.address,
+      '__isExecuting': false,
       '__BSP': runner.Registers.BSP,
     };
     runner.DataStack.push(newStackFrame);
