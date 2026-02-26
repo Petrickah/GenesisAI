@@ -1,7 +1,8 @@
 import * as readline from 'readline';
 import { k } from '../engine/KrakoaCompiler.js';
 import krakoa from '../engine/KrakoaEngine.js';
-import { KrakoanRunner, type KrakoanInfo } from '../engine/KrakoaRunner.js';
+import { KrakoanRunner } from '../engine/KrakoaRunner.js';
+import type { KrakoanInstruction } from '../schema/krakoa.schema.js';
 
 const SNIPPETS: Record<string, string> = {
   ":fragment"     : "📑",
@@ -21,6 +22,7 @@ const SNIPPETS: Record<string, string> = {
   ":action"       : "🚀",
   ":intent"       : "🎭",
   ":link"         : "🔗",
+  ":jump"         : "🔃",
   ":authority"    : "🔱",
   ":alliance"     : "🤝",
   ":conflict"     : "⚔️",
@@ -101,7 +103,7 @@ export class KrakoaREPL {
         return true;
       case '.step':
         if (this.runner) {
-          this.renderDebugFrame();
+          await this.handleStep();
         } else {
           console.log("❌ No program loaded. Use .load <path>");
         }
@@ -140,59 +142,84 @@ export class KrakoaREPL {
     }
   }
 
-  private renderDebugFrame(windowSize: number = 5) {
-    const { Program, InstructionPointer } = this.runner ?? {};
+  private async handleStep() {
+    const { Program, Registers } = this.runner ?? {};
+    if (!this.runner || !Program || !Registers) return;
 
-    function printLine(currAddr: number) {
-      if (!Program) return;
-      if (!Program?.code[currAddr]) return;
+    console.clear();
+    console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
+    console.log(`[ IP: ${Registers['IP'] ?? 'HALTED'} | Status: ${Registers['Status'] ?? 'HALTED'} | Symbols: ${Object.keys(Program.symbols).length}]`);
 
-      const activeInst = Program.code[currAddr];
-      const isCurrent = currAddr === InstructionPointer;
-      const pointer = isCurrent ? "  ==>  " : "       ";
-      const opcode = activeInst.type.toString().padEnd(10);
-      const params = Object.entries(activeInst.params)
-        .filter(([k]) => k !== 'timestamp') // scoatem zgomotul
-        .map(([k, v]) => {
-          const val = typeof v === 'number' ? `"${Program.text[v]}"` : JSON.stringify(v);
-          return `${k}: ${val}`;
-        })
-        .join(', ') || 'anon';
-
-      if (isCurrent) {
-        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${params})\x1b[0m\n`);
-      } else {
-        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${params})`);
-      }
+    await this.renderDebugFrame(this.runner);
+    const hasMore = await this.runner.step();
+    if (!hasMore) {
+      console.log("\x1b[33m[SYSTEM]: Program execution halted (End of stack).\x1b[0m");
     }
+    this.rl.prompt();
+  }
 
-    function renderWindow() {
-      if (!Program || typeof InstructionPointer == 'undefined') return;
+  private async renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
+    const { Program, Registers, ContextStack } = runner;
 
-      const half = Math.floor(windowSize / 2);
-      const totalInstructions = Object.keys(Program.code).length;
-
-      let start = Math.max(0, InstructionPointer - half);
-      let end   = Math.min(totalInstructions - 1, start + windowSize - 1);
-
-      if (end - start < windowSize - 1) {
-        start = Math.max(0, end - windowSize + 1);
-      }
-
-      console.log(`--- 🪟 WINDOW: [${start.toString().padStart(3,'0')} - ${end.toString().padStart(3,'0')}] ---`);
-      console.log(`[ IP: ${InstructionPointer ?? 'HALTED'} | Symbols: ${Object.keys(Program.symbols).length}]\n`);
-      for (let index = start; index <= end; index++) {
-        printLine(index);
+    const currContext = ContextStack[Registers['StackPointer']];
+    if (currContext) {
+      const hasKeys = Object.keys(currContext).length > 0;
+      if (hasKeys) {
+        console.log(`\x1b[90m Context: [ ${JSON.stringify(currContext, null, 2)} ]\x1b[0m\n`);
+      } else {
+        console.log(`\x1b[90m Context: [ empty ]\x1b[0m\n`);
       }
     }
     
-    if (Program) {
-      this.runner?.fetch();
-      process.stdout.write('\u001b[2J\u001b[0;0H');
-      console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
-      renderWindow();
+    console.log();
+    await renderWindow(runner, windowSize);
+
+    async function printLine(runner: KrakoanRunner, currAddr: number) {
+      if (!Program) return;
+      if (!Program?.code[currAddr]) return;
+
+      const activeInst = await runner.decode(Program.code[currAddr]) as KrakoanInstruction;
+      const isCurrent = currAddr === Registers['IP'];
+      const pointer = isCurrent ? "  ==>  " : "       ";
+      const opcode = activeInst?.type?.toString();
+
+      function processParamsList(value: any): string {
+        if (typeof value === 'object') {
+          let paramsList: string[] = [];
+          for (let key in value) {
+            paramsList.push(`${key}: ${processParamsList(value[key])}`);
+          }
+          return paramsList.join(', ') ?? 'empty';
+        }
+        return `"${value}"`;
+      }
+
+      const paramsList = processParamsList(activeInst?.params) || 'anon';
+
+      if (isCurrent) {
+        process.stdout.write(`\x1b[32m${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})\x1b[0m\n`);
+      } else {
+        console.log(`${pointer}[${currAddr.toString().padStart(3, '0')}]: ${opcode} (${paramsList})`);
+      }
     }
 
-    this.rl.prompt();
+    async function renderWindow(runner: KrakoanRunner, windowSize: number = 5) {
+      if (!Program) return;
+      
+      const half = Math.floor(windowSize / 2);
+      const totalInstructions = Object.keys(Program.code).length;
+      
+      let start = Math.max(0, Registers['IP'] - half);
+      let end   = Math.min(totalInstructions - 1, start + windowSize - 1);
+      
+      if (end - start < windowSize - 1) {
+        start = Math.max(0, end - windowSize + 1);
+      }
+      
+      console.log(`--- 🪟 WINDOW: [${start.toString().padStart(3,'0')} - ${end.toString().padStart(3,'0')}] ---`);
+      for (let index = start; index <= end; index++) {
+        await printLine(runner, index);
+      }
+    }
   }
 }

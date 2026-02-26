@@ -1,43 +1,128 @@
-import type { KrakoanProgram, KrakoanInstruction } from "../schema/krakoa.schema.js";
+import { type KrakoanInfo, type KrakoanProgram, type KrakoanTags } from "../schema/krakoa.schema.js";
 
-export interface KrakoanInfo {
-  address: number,
-  instruction?: KrakoanInstruction | undefined,
-  next?: number | undefined
-};
+type InstructionOpcode = string;
+type ContextType = Record<string, any>;
+type ContextStackType = Array<ContextType>;
+type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Promise<boolean>;
 
 export class KrakoanRunner {
-  public InstructionPointer: number | undefined;
-  public Context: Record<string, any> = {};
-  public IsRunning: boolean = false;
+  public Registers: ContextType = {};
+  public ContextStack: ContextStackType = [];
+  public InstructionMap: Record<InstructionOpcode, ExecutionHandler> = {
+  }
 
-  constructor(public Program: KrakoanProgram | undefined) {
+  constructor(public Program: KrakoanProgram ) {
     this.reset();
   }
 
-  public fetch() : KrakoanInfo | undefined {
-    if (!this.Program) return undefined;
-    if (typeof this.InstructionPointer === 'undefined') return undefined;
+  public async step(): Promise<boolean> {
+    if (!this.Program || this.Registers["Status"] !== 'RUNNING') return false;
+
+    const __raw = this.fetch();
+    if (!__raw) return false;
+
+    __raw.instruction = await this.decode(__raw.instruction);
+
+    if (!await this.execute(__raw)) {
+      console.error(`❌ Instruction Error for ${__raw.address}`);
+    }
     
-    const currInstruction = this.Program.code[this.InstructionPointer];
-    if (!currInstruction) {
-      this.InstructionPointer = undefined;
-      return undefined;
+    const lastInstruction = Object.keys(this.Program?.code).length;
+    if (this.Registers["IP"] === __raw.address) {
+      if (__raw.next < lastInstruction) {
+        this.Registers["IP"] = __raw.next;
+      } else {
+        this.Registers["Status"] = 'HALTED';
+      }
     }
 
-    const prevInstruction = this.InstructionPointer;
-    const nextInstruction = (currInstruction.next.length > 0) ? currInstruction.next[0] : -1;
-    this.InstructionPointer = (nextInstruction !== -1) ? nextInstruction : undefined;
+    return true;
+  }
 
-    return {
-      address: prevInstruction,
-      instruction: currInstruction,
-      next: this.InstructionPointer
+  private evalLambda(id: string, value: any): any {
+    const currContext = this.ContextStack[this.Registers['StackPointer']] ?? {};
+    const safeContext = new Proxy(currContext, {
+      get: (target, prop: string) => {
+        if (prop === "Tags") {
+          return new Proxy(target["Tags"] || {}, {
+            get: (t, p) => (p in t ? t[p] : false)
+          });
+        }
+        return target[prop];
+      }
+    });
+    if (value && value.type === ":lambda") {
+      try {
+        const fn = new Function('ctx', value.code);
+        const result = fn(safeContext)
+        console.log(`🔍 Evaling Lambda for ${id}. Context keys: ${Object.keys(safeContext)} Result: ${result}`);
+        return result;
+      } catch (e) {
+        console.error(`❌ Lambda Error for ${id}:`, e);
+        return undefined;
+      }
+    } else {
+      return value;
     }
   }
 
+  private async execute(node: KrakoanInfo) : Promise<boolean> {
+    if (typeof node?.instruction.type !== 'string') {
+      return false;
+    }
+    
+    const { type } = node.instruction;
+    const callback = this.InstructionMap[type];
+    if (callback === undefined) {
+      return false;
+    }
+
+    return callback(node, this);
+  }
+
+  private fetch() : KrakoanInfo {
+    if (this.Program !== null) {
+      const __currIP = this.Registers["IP"] as number;
+      const currInstruction = this.Program.code[__currIP];
+      if (currInstruction !== undefined) {
+        const __nextIP = currInstruction.next[0] ?? -1;
+        return {
+          next   : __nextIP,
+          address: __currIP,
+          instruction: currInstruction,
+        }
+      }
+    }
+    return null;
+  }
+
+  public async decode(value: any): Promise<any> {
+    if (value === null || value === undefined || !this.Program) return;
+    if (typeof value === 'number') return this.Program.text[value];
+    if (Array.isArray(value)) return value.map(async item => await this.decode(item));
+    if (typeof value === 'object') {
+      const newObject: Record<string, any> = {};
+      for (let key in value) {
+        newObject[key] = (key !== "address" && key !== "next") 
+          ? await this.decode(value[key])
+          : value[key];
+      }
+      return newObject;
+    }
+    return value;
+  }
+
   public reset() {
-    this.InstructionPointer = this.Program?.entry;
-    this.Context = {};
+    if (this.Program === null) return;
+    this.Registers['IP'] = this.Program.entry;
+    this.Registers['Status'] = 'RUNNING';
+    this.ContextStack = [];
+    
+    if (this.ContextStack.length === 0) {
+      this.ContextStack.push({ metadata: { name: "ROOT_CONTEXT" } });
+    }
+
+    this.Registers['StackPointer'] = this.ContextStack.length - 1;
+    this.Registers['BaseStackPointer'] = this.Registers['StackPointer'];
   }
 }

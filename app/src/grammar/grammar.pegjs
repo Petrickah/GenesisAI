@@ -1,36 +1,9 @@
 {{
-  const SNIPPETS = {
-    "📑": ":fragment",
-    "🧠": ":concept",
-    "👤": ":entity",
-    "📦": ":collection",
-    "📂": ":content",
-    "🧬": ":logic",
-    "🔓": ":asset",
-    "📌": ":state",
-    "🔑": ":tag",
-    "🧩": ":stance",
-    "⌛": ":time",
-    "🛡️": ":shield",
-    "🩺": ":utility",
-    "💉": ":function",
-    "🚀": ":action",
-    "🎭": ":intent",
-    "🔗": ":link",
-    "🔱": ":authority",
-    "🤝": ":alliance",
-    "⚔️": ":conflict",
-    "➔": ":trigger",
-    "⚓": ":anchor",
-    "📡": ":signal",
-    "💬": ":speech"
-  };
+  const emojiRegex = require('emoji-regex');
 
-  const ALIASES = Object.keys(SNIPPETS).map((inputKey) => normalize(inputKey));
-
-  function normalize(inputKey) {
-    const normalizedInput = inputKey.replace(/\uFE0F/g, "");
-    return SNIPPETS[normalizedInput] || inputKey
+  function getValidEmoji(input) {
+    const match = input.match(emojiRegex());
+    return match ? match[0] : input;
   }
 
   function solveOriginalReference(members) {
@@ -38,11 +11,11 @@
 
     for (const member of members) { // Folosim for...of pentru a lua valorile direct
       if (typeof member === 'string') {
-        solvedSegments.push(member);
+        solvedSegments.push(`"${member}"`);
       } 
       else if (typeof member === 'object' && member !== null) {
         if (member.root) {
-          solvedSegments.push(member.root);
+          solvedSegments.push(`"${member.root}"`);
         } 
         else if (member.segments) {
           solvedSegments.push(solveOriginalReference(member.segments));
@@ -55,10 +28,11 @@
 
   function buildReference(symbol, kind, root, members) {
     const path = solveOriginalReference(members);
+    const finalPath = path ? `::"${path}"` : '';
     return {
       root: root,
       kind: kind,
-      original: `${symbol}${root}${path ? '::' + path : ''}`,
+      original: `${symbol}${root}${finalPath}`,
       segments: [root, ...members.map(m => (typeof m === 'object' ? m.root : m))],
       target: members.length > 0 
                 ? (typeof members[members.length - 1] === 'object' ? members[members.length - 1].root : members[members.length - 1]) 
@@ -76,30 +50,57 @@
   }
 }}
 
-Start = _ program:NodeList _ { return program; }
+Start = _ program:ExpressionList _ { return program; }
 
-NodeList = head:Node tail:(_ Node)* {
-  return [head, ...tail.map(t => t[1])];
-}
-
-Node 
-  = ActionPath 
-  / Instruction 
-  / ReferencePath
-
-ActionPath
-  = "➔" _ target:ValidTarget {
-    return buildNode(":trigger", [target], [], {});
+ExpressionList 
+  = head:(ActionPath / Expression) ";" tail:(_ (ActionPath / Expression) _ ";")* {
+    const rest = tail.map(element => element[1]);
+    return [head, ...rest];
   }
 
-ValidTarget
-  = Instruction
-  / ReferencePath
-  / Reference
+Expression
+  = ex:(Instruction / PathElement) {
+    return ex
+  }
+
+ActionPath
+  = params:ParameterList? "➔" _ target:Expression _ {
+    return buildNode("➔", [target], [], params || {});
+  }
 
 Instruction
-  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ ";"? _ { 
+  = _ symbol:Symbol params:ParameterList? tags:TagList? body:Body? _ { 
     return buildNode(symbol.type, body || [], tags || [], params);
+  }
+
+Symbol
+  = icon:EmojiSequence {
+    return buildNode(icon, [], [], {});
+  }
+
+EmojiSequence 
+  = chars:$( [^\s\w\(\)\[\]\{\};,:]+ ) {
+    const valid = getValidEmoji(chars);
+    if (valid) {
+      return valid;
+    }
+
+    error(`Expected symbol "${chars}" is not a valid emoji opcode.`);
+  }
+
+ParameterList
+  = _ "(" _ head:Identifier tail:(_ "," _ Parameter)* _ ")" _ {
+    const params = { id: head };
+    tail.forEach(element => {
+      const p = element[3];
+      Object.assign(params, p);
+    });
+    return params;
+  }
+
+Parameter
+  = _ label:Identifier ":" value:(Identifier / LambdaExpression) {
+    return { [label]: value }
   }
 
 TagList
@@ -116,6 +117,7 @@ PathElement
   = Reference
   / Tag
   / Identifier
+  / LambdaExpression
 
 ReferencePath
   = root:Reference "::" members:PathSequence {
@@ -137,6 +139,10 @@ Tag
     return buildReference('#', 'hashtag', id, []);
   }
 
+Identifier
+  = String
+  / $([a-zA-Z0-9_]+)
+
 LambdaExpression
   = _ "λ" _ "(" content:LambdaBody ")" _ {
     const raw = content.trim();
@@ -144,62 +150,23 @@ LambdaExpression
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
       type: ":lambda",
-      params: {
-        code: finalCode,
-        isComplex: isComplex,
-      },
-      body: []
+      code: finalCode,
     };
   }
 
 LambdaBody
-  = $([^()]* ("(" LambdaBody ")")* [^()]*) 
-
-Expression
-  = _ e:(ActionPath / LambdaExpression / Instruction / ReferencePath / Reference) _ ";"? _ {
-    return e;
-  }
+  = $([^()]* ("(" LambdaBody ")")* [^()]*)
 
 Body
-  = _ "{" _ head:Expression? tail:(_ Expression)* _ "}" _ {
-    const results = head ? [head] : [];
-    return results.concat(tail.map(t => t[1]));
+  = _ "{" _ results:ExpressionList _ "}" _ {
+    return results;
   }
-
-ParameterList
-  = _ "(" _ head:Identifier tail:(_ "," _ Parameter)* _ ")" _ {
-    const params = { id: head };
-    tail.forEach(element => {
-      const p = element[3];
-      Object.assign(params, p);
-    });
-    return params;
-  }
-
-Parameter
-  = _ label:Identifier ":" value:(LambdaExpression / String / PathElement) {
-    return { [label]: value }
-  }
-
-Symbol
-  = icon:EmojiSequence {
-    const normalizedIcon = normalize(icon);
-    const isKnown = ALIASES.some(k => k === normalizedIcon);
-    return buildNode(normalizedIcon, [], [], {});
-  }
-
-EmojiSequence 
-  = $(([\uD800-\uDBFF][\uDC00-\uDFFF] / [^\s\w\(\)\[\]\{\};,:])[\uFE00-\uFE0F\u200D]*)
-  
-Identifier
-  = String
-  / $([a-zA-Z0-9_]+)
-
-TextContent
-  = $((!"\"" .)*)
 
 String
   = _ "\"" text:TextContent "\"" _ { return text; }
+
+TextContent
+  = $((!"\"" .)*)
 
 _ "Whitespace"
   = ([ \t\n\r] / Comment)*

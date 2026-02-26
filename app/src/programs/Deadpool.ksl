@@ -2,36 +2,48 @@ import { k } from '../engine/KrakoaCompiler'
 
 export default k/*ts*/`
 🧠("NEX-CON_RESL", name: "Absurd Overdrive") 🔑 [#PsychologicalBuffer, #MetaHumor, #ChaosDefense] {
-    ➔ 🧬("Logic", description: "Damage control via reality detachment.");
-    🔓("NEX-AST-WADE_GEAR", name: "Wade's Gear") 🔑 [#Weaponry, #TeleportationDevice] {
-        🩺("Utility", status: "READY", description: "Eliminating bureaucracy via fast repositioning.");
-        💉("Bypass Bureaucracy", description: "Fast repositioning via teleportation");
+  ➔ 🧬("Logic", description: "Damage control via reality detachment.");
+  🔗("NEX-CON_RESL-RETURN", mode: "Return");
+  🔓("NEX-AST-WADE_GEAR", name: "Wade's Gear") 🔑 [#Weaponry, #TeleportationDevice] {
+    🩺("Utility", status: "READY", description: "Eliminating bureaucracy via fast repositioning.");
+    💉("Bypass Bureaucracy", description: "Fast repositioning via teleportation");
+    🔗("NEX-AST-WADE_GEAR-RETURN", mode: "Return");
+  };
+  👤("WADE_BASE", name: "Wade Wilson") 🔑 [#MercWithAMouth, #HealingFactor, #AnvilSlayer] {
+    📌("MaxHealth", value: λ(150));
+    🧩("Maximum Effort") 🔑 [#Sarcastic, #Optimism, #Iresponsability];
+    📑("WADE-FRG-META", name: "Meta Commentary") {
+      📂("Chimichanga Optimized", content: "Hey, Architect! Don't forget about the bug! They are little design suprises.");
     };
-    👤("WADE_BASE", name: "Wade Wilson") 🔑 [#MercWithAMouth, #HealingFactor, #AnvilSlayer] {
-        🧩("Maximum Effort") 🔑 [#Sarcastic, #Optimism, #Iresponsability];
-        📑("WADE-FRG-META", name: "Meta Commentary") {
-            📂("Chimichanga Optimized", content: "Hey, Architect! Don't forget about the bug! They are little design suprises.");
-        };
-    };
+    🔗("WADE_BASE-RETURN", mode: "Return");
+  };
 };
 
-➔ 👤("NEX-AGT-WADE", name: "Wade Wilson") {
-    🔗("Inheritance") 🔑 [@"NEX-CON_RESL"::"WADE_BASE", @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
-    📌("Health", value: λ(ctx.MaxHealth));
-    📌("Current Logic", value: "Neutral Chaos");
-    📌("Active Equipment") 🔑 [@"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
-    ➔ 🧬("Healing Factor", mode: "Passive") {
-        ⚓("Health Check", condition: λ(ctx.Health < 50)) 🔑 [@"NEX-AGT-WADE"::#Health] {
-            🚀("Regenerate Health", power: "Auto");
-        }
+➔ 👤("NEX-AGT_WADE") {
+  🔗("NEX-AGT_WADE-EXTEND", mode: "Inheritance") 🔑 [
+    @"NEX-CON_RESL",
+    @"NEX-CON_RESL"::"WADE_BASE",
+    @"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META",
+    @"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized",
+    @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"
+  ];
+  📌("Health", value: λ(ctx["MaxHealth"]));
+  📌("Current Logic", value: "Neutral Chaos");
+  📌("Active Equipment", value: λ(ctx["NEX-AST-WADE_GEAR"]));
+  🛡️("Obiectiv Securizat", level: "High", description: "Supravegheat de Stepford Cuckoos și Magneto.");
+  ➔ 🧬("Healing Factor", mode: "Passive") {
+    ⚓ ("Health Check", condition: λ(ctx["Health"] < 50)) {
+      🚀("Regenerate Health", power: "Auto");
     };
-    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer)) 🔑 [@"NEX-CON_RESL"::#PsychologicalBuffer] {
-        🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
-        📡("Meta Awareness", target: "System");
-        ➔ 💬("Fourth Wall Breach", to: "Architect") {
-            🎭("Jesting", breakWall: "true");
-            📂("Message") 🔑 [@"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized"];
-        }
+  };
+  ⚓("Psychological Buffer", condition: λ(ctx["Tags"]["PsychologicalBuffer"])) {
+    🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
+    📡("Meta Awareness", target: "System");
+    ➔ 💬("Fourth Wall Breach", to: "Architect") {
+      🎭("Jesting", breakWall: "true");
+      📂("Message", content: λ(cts["Chimichanga Optimized"]));
     };
+    ➔ 🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT_WADE"::"Psychological Buffer"];
+  };
 };
 `;

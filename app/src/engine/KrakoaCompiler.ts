@@ -1,11 +1,14 @@
 import { KrakoanNodeSchema, KrakoanProgramSchema, KrakoanTagsSchema, type KrakoanInstruction, type KrakoanNode, type KrakoanProgram } from '../schema/krakoa.schema.js';
 import parser from '../grammar/grammar.cjs';
 
-export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgram {
-  const raw = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
-  const ast = parser.parse(raw);
-  
-  return compile(KrakoanNodeSchema.array().parse(ast));
+export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgram | undefined {
+  const input = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
+  try {
+    const ast = parser.parse(input);  
+    return compile(KrakoanNodeSchema.array().parse(ast));
+  } catch(error: any) {
+    console.error(`⚠️ System error: ${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
+  }
 }
 
 function compile(fullAST: KrakoanNode[]): KrakoanProgram {
@@ -31,7 +34,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       if (typeof value === 'object') {
         const newObject: any = {};
         for (let k in value) {
-          newObject[k] = process(value[k]);
+          newObject[k] = k !== 'address' ? process(value[k]) : value[k];
         }
         return newObject;
       }
@@ -100,7 +103,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
           newObject[k] = solveReference(value[k]);
         return newObject;
       }
-      
       return value;
     }
 
@@ -154,7 +156,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       );
       if (isTagOnCurrent) {
         console.log(`✅ Step ${i}: Found '${cleanSegment}' as a Tag on current node.`);
-        continue; // Trecem la următorul segment (dacă mai există)
+        continue;
       }
       const nextNode = currentScope.body?.find((node: any) => {
         const nodeId = node.params?.id?.replace(/^[@#]/, '');
@@ -179,7 +181,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
       let defaultNext: number = isLastInstruction ? (returnIndex ?? -1) : currentIndex + 1;
 
-      if (activeNode.type === ':trigger' && !returnIndex && firstTriggerIndex === -1) {
+      if (activeNode.type === '➔' && !returnIndex && firstTriggerIndex === -1) {
         firstTriggerIndex = currentIndex;
       }
 
@@ -190,10 +192,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         params: activeNode.params,
         tags: activeNode.tags?.map((tag: any) => {
           if (tag.kind === 'reference') {
-            // Validăm semantica: "Are acest drum logică în structura AST?"
-            // Verificăm pornind de la rădăcina programului (bodyNodes original)
             const isValid = verifyReference(tag.segments, fullAST); 
-
             if (!isValid) {
               throw new Error(`Semantic Error: Reference path '@${tag.segments.join('::')}' is unreachable or invalid.`);
             }
@@ -208,7 +207,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       if (activeNode.body && activeNode.body.length > 0) {
         const bodyStartIndex = instructions.length;
 
-        if (activeNode.type === ':trigger') {
+        if (activeNode.type === '➔') {
           process(activeNode.body, currentIndex); 
           const exitIndex = instructions.length;
           currInstruction.next = [bodyStartIndex, exitIndex];
@@ -216,7 +215,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         else {
           process(activeNode.body, defaultNext);
           
-          if (activeNode.type === ':anchor') {
+          if (activeNode.type === '⚓') {
             const exitIndex = instructions.length;
             currInstruction.next = [bodyStartIndex, exitIndex];
           } else {
@@ -229,7 +228,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
       if (isLastInstruction) {
         defaultNext = instructions.length;
-        // Și trebuie să actualizăm manual inst.next dacă nu a fost setat de body
         if (!activeNode.body || activeNode.body.length === 0) {
           currInstruction.next = [instructions.length];
         }
