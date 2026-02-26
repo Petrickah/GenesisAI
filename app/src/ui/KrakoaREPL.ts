@@ -150,7 +150,7 @@ export class KrakoaREPL {
     console.log(`=== 👾 KRAKOAN DEBUGGER (GDB Mode) ===`);
     console.log(`[ IP: ${Registers['IP'] ?? 'HALTED'} | Status: ${Registers['Status'] ?? 'HALTED'} | Symbols: ${Object.keys(Program.symbols).length}]`);
 
-    this.renderDebugFrame(this.runner);
+    await this.renderDebugFrame(this.runner);
     const hasMore = await this.runner.step();
     if (!hasMore) {
       console.log("\x1b[33m[SYSTEM]: Program execution halted (End of stack).\x1b[0m");
@@ -158,17 +158,6 @@ export class KrakoaREPL {
     this.rl.prompt();
   }
 
-  private renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
-    const { Program, InstructionPointer, StackPointer, ContextStack } = runner;
-    const currentContext = ContextStack[StackPointer - 1];
-
-    if (currentContext) {
-      const ctxKeys = Object.keys(currentContext);
-      if (ctxKeys.length > 0) {
-        const ctxView = ctxKeys.map(k => `${k}: ${JSON.stringify(currentContext[k], null, 2)}`).join(' | ');
-        console.log(`\x1b[90m[ Context ${StackPointer - 1}: ${ctxView} ]\x1b[0m\n`);
-      } else {
-        console.log(`\x1b[90m[ Context ${StackPointer - 1}: empty ]\x1b[0m\n`);
   private async renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
     const { Program, Registers, ContextStack } = runner;
 
@@ -180,11 +169,8 @@ export class KrakoaREPL {
       } else {
         console.log(`\x1b[90m Context: [ empty ]\x1b[0m\n`);
       }
-    } else {
-      console.log(`\x1b[90m[ Context ${StackPointer - 1}: undefined ]\x1b[0m\n`);
     }
     
-    renderWindow(runner, windowSize);
     console.log();
     await renderWindow(runner, windowSize);
 
@@ -192,7 +178,7 @@ export class KrakoaREPL {
       if (!Program) return;
       if (!Program?.code[currAddr]) return;
 
-      const activeInst = await runner.decode(Program.code[currAddr]) as KrakoanInstruction | undefined;
+      const activeInst = await runner.decode(Program.code[currAddr]) as KrakoanInstruction;
       const isCurrent = currAddr === Registers['IP'];
       const pointer = isCurrent ? "  ==>  " : "       ";
       const opcode = activeInst?.type?.toString();
