@@ -42,8 +42,8 @@ export type KrakoanInstruction = z.infer<typeof KrakoanInstructionSchema>;
 
 export const KrakoanInfoSchema = z.object({
   instruction: KrakoanInstructionSchema,
-  address: z.number().default(-1),
-  next: z.number().default(-1)
-})
+  address: z.number(),
+  next: z.number()
+}).nullable();
 
 export type KrakoanInfo = z.infer<typeof KrakoanInfoSchema>;

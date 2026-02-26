@@ -1,77 +1,40 @@
 import { type KrakoanInfo, type KrakoanProgram, type KrakoanTags } from "../schema/krakoa.schema.js";
 
 type InstructionOpcode = string;
-type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Promise<void>;
+type ContextType = Record<string, any>;
+type ContextStackType = Array<ContextType>;
+type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Promise<boolean>;
 
 export class KrakoanRunner {
-  public MaxCycles: number = 1;
-  public InstructionPointer: number | undefined;
-  public Context: Record<string, any> = {};
-  public IsRunning: boolean = false;
-  public InternalState: Record<string, any> = {};
+  public Registers: ContextType = {};
+  public ContextStack: ContextStackType = [];
   public InstructionMap: Record<InstructionOpcode, ExecutionHandler> = {
-    "🔃": async (node, runner) => {
-      const targetId = node.instruction?.params.goto;
-      const tags: KrakoanTags[] = node.instruction?.tags ?? [];
-      const reference = tags.find((value) => value.target === targetId);
-      if (reference?.address !== undefined) {
-        node.next = reference.address;
-        console.log(`🚀 Jumped to ${targetId} at "${reference.original}":${reference.address}`);
-      }
-    },
-    "📌": async (node, runner) => {
-      const { id, value } = node.instruction.params;
-      runner.Context[id] = runner.evalLambda(id, value);
-      console.log(`📌 [State] ${id} set to ${runner.Context[id]} (via Lambda)`);
-    },
-    "💬": async (node, runner) => {
-      console.log(`💬 [Speech]: ${node.instruction?.params.content || node.instruction?.params.id}`);
-    },
-    "➔": async (node, runner) => {
-      const inst = node.instruction;
-      const triggerKey = `trigger_at_${node.address}`
-      const pathPrimary = inst.next[0];
-      const pathExit = inst.next[1];
 
-      let state = runner.InternalState[triggerKey] || { cycleCount: 0 };
-      if (state.cycleCount < runner.MaxCycles) {
-        state.cycleCount++;
-        node.next = pathPrimary ?? node.next;
-      } else {
-        node.next = pathExit ?? node.next;
-      }
-
-      runner.InternalState[triggerKey] = state;
-      console.log(`➔ [Trigger ID: ${triggerKey}] @${node.address} | Cycle: ${state.cycleCount}/${runner.MaxCycles} | Next: ${node.next}`);
-    },
-    "⚓": async (node, runner) => {
-      const condition = runner.evalLambda(node.instruction.params.id, node.instruction.params.condition);
-      
-      if (condition === true) {
-        node.next = node.instruction.next[0] ?? node.next;
-      } else {
-        node.next = node.instruction.next[1] ?? node.next;
-      }
-    }
   };
 
-  constructor(public Program: KrakoanProgram | undefined) {
+  constructor(public Program: KrakoanProgram ) {
     this.reset();
-    this.IsRunning = true;
   }
 
   public async step(): Promise<boolean> {
-    if (!this.Program || !this.IsRunning || this.InstructionPointer === undefined) return false;
+    if (!this.Registers["IsRunning"]) return false;
 
-    const rawInstruction = this.fetch();
-    rawInstruction.instruction = this.decode(rawInstruction?.instruction);
-    await this.execute(rawInstruction);
+    const __raw = this.fetch();
+    if (!__raw) return false;
 
-    if (rawInstruction && rawInstruction.next !== -1) {
-      this.InstructionPointer = rawInstruction.next;
-    } else {
-      this.IsRunning = false;
+    __raw.instruction = await this.decode(__raw.instruction);
+
+    if (!await this.execute(__raw)) {
+      console.error(`❌ Instruction Error for ${__raw.address}`);
+      return false;
     }
+
+    if (__raw.next !== -1) {
+      this.Registers["IP"] = __raw.next;
+    } else {
+      this.Registers["IsRunning"] = false;
+    }
+
     return true;
   }
 
@@ -79,8 +42,8 @@ export class KrakoanRunner {
     if (value && value.type === ":lambda") {
       try {
         const fn = new Function('ctx', value.code);
-        console.log(`🔍 Evaling Lambda for ${id}. Context keys:`, Object.keys(this.Context));
-        return fn(this.Context);
+        console.log(`🔍 Evaling Lambda for ${id}. Context keys:`, Object.keys({}));
+        return fn({});
       } catch (e) {
         console.error(`❌ Lambda Error for ${id}:`, e);
         return undefined;
@@ -90,32 +53,45 @@ export class KrakoanRunner {
     }
   }
 
-  private async execute(node: KrakoanInfo) {
-    const instructionCallback = node.instruction?.type ? this.InstructionMap[node.instruction?.type] : undefined;
-    return instructionCallback ? await instructionCallback(node, this) : undefined;
+  private async execute(node: KrakoanInfo) : Promise<boolean> {
+    if (typeof node?.instruction.type !== 'string') {
+      return false;
+    }
+    
+    const { type } = node.instruction;
+    const callback = this.InstructionMap[type];
+    if (callback === undefined) {
+      return false;
+    }
+
+    return callback(node, this);
   }
 
   private fetch() : KrakoanInfo {
-    const currInstruction = this.Program!.code[this.InstructionPointer!]!;
-    const prevInstruction = this.InstructionPointer!;
-    const nextInstruction = currInstruction?.next[0];
-
-    return {
-      address: prevInstruction,
-      instruction: currInstruction,
-      next: nextInstruction ?? -1
+    if (this.Program !== null) {
+      const __currIP = this.Registers["IP"] as number;
+      const currInstruction = this.Program.code[__currIP];
+      if (currInstruction !== undefined) {
+        const __nextIP = currInstruction.next[0] ?? -1;
+        return {
+          next   : __nextIP,
+          address: __currIP,
+          instruction: currInstruction,
+        }
+      }
     }
+    return null;
   }
 
-  public decode(value: any): any {
-    if (!value || !this.Program) return;
+  public async decode(value: any): Promise<any> {
+    if (value === null || value === undefined || !this.Program) return;
     if (typeof value === 'number') return this.Program.text[value];
-    if (Array.isArray(value)) return value.map(item => this.decode(item));
+    if (Array.isArray(value)) return value.map(async item => await this.decode(item));
     if (typeof value === 'object') {
       const newObject: Record<string, any> = {};
       for (let key in value) {
         newObject[key] = (key !== "address" && key !== "next") 
-          ? this.decode(value[key])
+          ? await this.decode(value[key])
           : value[key];
       }
       return newObject;
@@ -124,10 +100,11 @@ export class KrakoanRunner {
   }
 
   public reset() {
-    this.InstructionPointer = this.Program?.entry;
-    this.IsRunning = false;
-    this.Context = {
-      "MaxHealth": 150
-    };
+    if (this.Program === null) return;
+    this.Registers['IP'] = this.Program.entry;
+    this.Registers['IsRunning'] = true;
+    this.Registers['StackPointer'] = this.ContextStack.length - 1;
+    this.Registers['BaseStackPointer'] = this.Registers['StackPointer'];
+    this.ContextStack = [];
   }
 }
