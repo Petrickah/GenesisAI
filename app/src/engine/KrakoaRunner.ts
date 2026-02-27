@@ -1,8 +1,9 @@
-import { type KrakoanInfo, type KrakoanProgram, type KrakoanTags } from "../schema/krakoa.schema.js";
+import { type KrakoanInfo, type KrakoanInfoNullable, type KrakoanProgram } from "../schema/krakoa.schema.js";
 import Inheritance from "./opcodes/Inheritance.js";
+import Speech from "./opcodes/Speech.js";
 import Trigger from "./opcodes/Trigger.js";
 
-export type InstructionOpcode = string;
+export type InstructionOpcode = string | number;
 export type ContextType = Record<string, any>;
 export type ContextStackType = Array<ContextType>;
 export type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Promise<boolean>;
@@ -13,6 +14,8 @@ export class KrakoanRunner {
   public InstructionMap: Record<InstructionOpcode, ExecutionHandler> = {
     "➔": Trigger,
     "🔗": Inheritance,
+    "💬": Speech,
+    "📡": Speech,
   }
 
   constructor(public Program: KrakoanProgram ) {
@@ -26,7 +29,6 @@ export class KrakoanRunner {
     if (!__raw) return false;
 
     __raw.instruction = await this.decode(__raw.instruction);
-
     if (!await this.execute(__raw)) {
       console.error(`❌ Instruction Error for ${__raw.address}`);
     }
@@ -71,46 +73,44 @@ export class KrakoanRunner {
   }
 
   private async execute(node: KrakoanInfo) : Promise<boolean> {
-    if (typeof node?.instruction.type !== 'string') {
-      return false;
-    }
-    
     const { type } = node.instruction;
-    const callback = this.InstructionMap[type];
-    const result = callback ? await callback(node, this) : true;
-
-    if (result) {
-      const currentBSP = this.Registers.BSP;
-      const parentContext = this.DataStack[currentBSP];
+    if (type !== undefined) {
+      const callback = this.InstructionMap[type];
+      const result = callback ? await callback(node, this) : true;
   
-      const isValidTrigger = node 
-        && parentContext
-        && parentContext.__trigger 
-        && parentContext.__retAddress === (node.address - 1);
-
-      if (isValidTrigger && !parentContext.__isExecuting) {
-        this.Registers.IP = parentContext.__retAddress;
+      if (result) {
+        const currentBSP = this.Registers.BSP;
+        const parentContext = this.DataStack[currentBSP];
+    
+        const isValidTrigger = node 
+          && parentContext
+          && parentContext.__trigger 
+          && parentContext.__retAddress === (node.address - 1);
+  
+        if (isValidTrigger && !parentContext.__isExecuting) {
+          this.Registers.IP = parentContext.__retAddress;
+        }
+  
+        return true;
       }
-
-      return true;
     }
 
     return false;
   }
 
-  private fetch() : KrakoanInfo {
-    if (this.Program !== null) {
-      const __currIP = this.Registers["IP"] as number;
-      const currInstruction = this.Program.code[__currIP];
-      if (currInstruction !== undefined) {
-        const __nextIP = currInstruction.next[0] ?? -1;
-        return {
-          next   : __nextIP,
-          address: __currIP,
-          instruction: currInstruction,
-        }
+  private fetch() : KrakoanInfoNullable {
+    if (this.Program === null) return null;
+    const __currIP = this.Registers["IP"] as number;
+    const currInstruction = this.Program.code[__currIP];
+    if (currInstruction !== undefined) {
+      const __nextIP = currInstruction.next[0] ?? -1;
+      return {
+        next   : __nextIP,
+        address: __currIP,
+        instruction: currInstruction,
       }
     }
+
     return null;
   }
 

@@ -1,4 +1,4 @@
-import type { KrakoanInfo, KrakoanTags } from "../../schema/krakoa.schema.js";
+import type { KrakoanInfo } from "../../schema/krakoa.schema.js";
 import type { KrakoanRunner } from "../KrakoaRunner.js";
 
 async function handleReturn(runner: KrakoanRunner): Promise<boolean> {
@@ -30,7 +30,6 @@ async function handleInheritance(node: KrakoanInfo, runner: KrakoanRunner) {
 }
 
 export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
-  if (!node) return false;
   const mode = node.instruction.params.mode as string;
 
   switch (mode) {

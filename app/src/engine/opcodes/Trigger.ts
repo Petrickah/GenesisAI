@@ -2,8 +2,6 @@ import type { KrakoanInfo } from "../../schema/krakoa.schema.js";
 import type { KrakoanRunner } from "../KrakoaRunner.js";
 
 export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
-  if (!node) return false;
-
   const { id, next } = node.instruction;
   const triggerName = `__trigger@${node.address}:${id ?? 'anon'}`;
   const currContext = runner.DataStack[runner.Registers.BSP];
