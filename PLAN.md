@@ -13,13 +13,16 @@ As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is ope
 - **Runner/VM (`KrakoaRunner.ts`)**: Register-based VM capable of executing instructions and handling execution contexts.
 - **Interactive REPL**: Debugger window, step-through execution, and snippet support are available.
 - **Hot-Reloading Environment**: `tsx` and `chokidar` integrated for rapid development cycles.
+- **Core Documentation**: Comprehensive JSDoc coverage for the compiler, runner, engine, and opcode handlers.
+- **Architectural Specification**: Documented the "Spawning Ritual" and dual-mode Trigger (Transient vs. Persistent) logic in `README.md`.
+- **Reference Script Documentation**: Full inline documentation for the `Deadpool.ksl` reference implementation.
+- **Watcher Stabilization**: Unified file extension handling (.ksl) across the engine and watcher.
 
 ### 🏗️ In Progress
 
 - **Opcode Expansion**: Implementing the full "Cypher Codex" logic within the VM. Currently, `➔` (Trigger), `👤` (Entity), `🧠` (Concept), `🧬` (Logic), and `💬`/`📡` (Speech/Signal) have active handlers. Opcodes like `📌` (State), `⚓` (Anchor), `🔗` (Inheritance - partial), and `🔃` (Jump) are currently missing full execution logic.
 - **VM Refinement**: The register-based execution model and stack frame management (including the `__isExecuting` implicit return logic) are finalized.
 - **Semantic Validation**: Deep reference checking in the compiler is active but needs stress testing for circular dependencies and complex graph paths.
-- **Watcher Fix**: The `KrakoaWatcher.ts` currently looks for `.kts` files while the engine and programs use `.ksl`.
 
 ---
 
@@ -99,5 +102,6 @@ As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is ope
 
 - [ ] **VM Opcodes**: Implement execution logic for `📌` (State), `⚓` (Anchor), `🔃` (Jump), and full `🔗` (Inheritance).
 - [ ] **Persistence**: Initialize the `docker-compose.yml` with SurrealDB and update `package.json` scripts for DB migration.
-- [ ] **Documentation**: Update the Cypher Codex with the final technical specifications for each opcode's runtime behavior.
-- [ ] **Watcher Fix**: Correct the file extension logic in `KrakoaWatcher.ts`.
+- [x] **Documentation**: Update the Cypher Codex and document the core engine/scripts.
+- [x] **Watcher Fix**: Correct the file extension logic in `KrakoaWatcher.ts`.
+- [x] **Core Documentation**: Add JSDoc to compiler, runner, engine, and opcodes.

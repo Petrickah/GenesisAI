@@ -1,7 +1,7 @@
 # 🧬 GenesisAI: Krakoa Nexus DSL
 
-* **Status:** Phase 1 - Ingestion & Architecture
-* **Core:** TypeScript + LLM Distillation
+- **Status:** Phase 1 - Ingestion & Architecture
+- **Core:** TypeScript + LLM Distillation
 
 ## 🌌 What does this project serves for?
 
@@ -67,43 +67,99 @@ The Domain Specific Language (DSL) used in GenesisAI, called Krakoa Nexus DSL, u
 
 ### 💻 Reference Implementation (The Wade Example)
 
-To be sure the data integrity is maintained we use a reference implementation. In the following example, an AI Agent called Wade Wilson (Deadpool) takes the behavior defined in a based template and gets spawned in the world.
-
-```ts
+```typescript
+// 🧠 (CONCEPT): "Absurd Overdrive" - Defines the abstract rules for Wade's existence.
 🧠("NEX-CON_RESL", name: "Absurd Overdrive") 🔑 [#PsychologicalBuffer, #MetaHumor, #ChaosDefense] {
-    ➔ 🧬("Logic", description: "Damage control via reality detachment.");
-    🔓("NEX-AST-WADE_GEAR", name: "Wade's Gear") 🔑 [#Weaponry, #TeleportationDevice] {
-        🩺("Utility", status: "READY", description: "Eliminating bureaucracy via fast repositioning.");
-        💉("Bypass Bureaucracy", description: "Fast repositioning via teleportation");
+  // ➔ (TRIGGER): Entrypoint for the basic logic of the concept.
+  ➔ 🧬("Logic", description: "Damage control via reality detachment.");
+  // 🔗 (LINK): Explicit return to parent scope.
+  🔗("NEX-CON_RESL-RETURN", mode: "Return");
+  // 🔓 (ASSET): Equipment and resources available to the agent.
+  🔓("NEX-AST-WADE_GEAR", name: "Wade's Gear") 🔑 [#Weaponry, #TeleportationDevice] {
+    // 🩺 (UTILITY): Passive item states.
+    🩺("Utility", status: "READY", description: "Eliminating bureaucracy via fast repositioning.");
+    // 💉 (FUNCTION): Active item capabilities.
+    💉("Bypass Bureaucracy", description: "Fast repositioning via teleportation");
+    🔗("NEX-AST-WADE_GEAR-RETURN", mode: "Return");
+  };
+  // 👤 (ENTITY): The base persona definition for Wade.
+  👤("WADE_BASE", name: "Wade Wilson") 🔑 [#MercWithAMouth, #HealingFactor, #AnvilSlayer] {
+    // 📌 (STATE): Immutable properties defined during compilation.
+    📌("MaxHealth", value: λ(150));
+    // 🧩 (STANCE): Behavioral presets.
+    🧩("Maximum Effort") 🔑 [#Sarcastic, #Optimism, #Iresponsability];
+    // 📑 (FRAGMENT): RAG entries or knowledge documents.
+    📑("WADE-FRG-META", name: "Meta Commentary") {
+      // 📂 (CONTENT): Specific data payload.
+      📂("Chimichanga Optimized", content: "Hey, Architect! Don't forget about the bug! They are little design suprises.");
     };
-    👤("WADE_BASE", name: "Wade Wilson") 🔑 [#MercWithAMouth, #HealingFactor, #AnvilSlayer] {
-        🧩("Maximum Effort") 🔑 [#Sarcastic, #Optimism, #Iresponsability];
-        📑("WADE-FRG-META", name: "Meta Commentary") {
-            📂("Chimichanga Optimized", content: "Hey, Architect! Don't forget about the bug! They are little design suprises.");
-        };
-    };
+    🔗("WADE_BASE-RETURN", mode: "Return");
+  };
 };
 
-➔ 👤("NEX-AGT-WADE", name: "Wade Wilson") {
-    🔗("Inheritance") 🔑 [@"NEX-AGT-WADE", @"NEX-CON_RESL"::"WADE_BASE", @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
-    📌("Health", value: λ(ctx.MaxHealth));
-    📌("Current Logic", value: "Neutral Chaos");
-    📌("Active Equipment") 🔑 [@"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"];
-    ➔ 🧬("Healing Factor", mode: "Passive") {
-        ⚓("Health Check", condition: λ(ctx.Health < 50)) 🔑 [@Self::"Health"] {
-            🚀("Regenerate Health", power: "Auto");
-        }
+// ➔ 👤 (ACTIVE TRIGGER): Spawns the specific Wade Agent instance.
+➔ 👤("NEX-AGT_WADE") {
+  // ➔ 🔗 (INHERITANCE): Merges properties from the Concept, Base Entity, and Assets.
+  ➔ 🔗("NEX-AGT_WADE-EXTEND", mode: "Inheritance") 🔑 [
+    @"NEX-CON_RESL",
+    @"NEX-CON_RESL"::"WADE_BASE",
+    @"NEX-CON_RESL"::"NEX-AST-WADE_GEAR"
+  ];
+  // Dynamic state initialization using λ (Lambda) expressions.
+  📌("Health", value: λ(ctx["MaxHealth"]));
+  📌("Current Logic", value: "Neutral Chaos");
+  📌("Active Equipment", value: λ(ctx["NEX-AST-WADE_GEAR"]));
+  // 🛡️ (SHIELD): Defensive or security-related state.
+  🛡️("Obiectiv Securizat", level: "High", description: "Supravegheat de Stepford Cuckoos și Magneto.");
+  // 🧬 (LOGIC): Reactive healing factor behavior.
+  ➔ 🧬("Healing Factor", mode: "Passive") {
+    ⚓ ("Health Check", condition: λ(ctx["Health"] < 50)) {
+      🚀("Regenerate Health", power: "Auto");
     };
-    ⚓("Psychological Buffer", condition: λ(ctx.PsychologicalBuffer)) 🔑 [@Self::PsychologicalBuffer] {
-        🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
-        📡("Meta Awareness", target: "System");
-        ➔ 💬("Fourth Wall Breach", to: "Architect") {
-            🎭("Jesting", breakWall: "true");
-            📂("Message") 🔑 [@"NEX-CON_RESL"::"WADE_BASE"::"WADE-FRG-META"::"Chimichanga Optimized"];
-        }
+    🔗("Healing Factor Done", mode: "Return");
+  };
+
+  // ⚓ (ANCHOR): Psychological safety mechanism.
+  ⚓("Psychological Buffer", condition: λ(ctx["Tags"]["PsychologicalBuffer"])) {
+    🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
+    // 📡 (SIGNAL): Broadcasts an event to the global context.
+    📡("Meta Awareness", target: "System");
+    // ➔ 💬 (COMM): Interaction with external users or the "Architect".
+    ➔ 💬("Fourth Wall Breach", to: "Architect") {
+      🎭("Jesting", breakWall: "true");
+      📂("Message", content: λ(cts["Chimichanga Optimized"]));
+      🔗("Speech Done", mode: "Return");
     };
+    ➔ 🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT_WADE"::"Psychological Buffer"];
+  };
+  🔗("NEX-AGT_WADE-RETURN", mode: "Return");
 };
 ```
+
+## 🏗️ The Spawning Ritual: VM Execution Model
+
+Understanding how a `.ksl` script transforms into a living agent is key to the GenesisAI architecture. The process follows a strict lifecycle:
+
+1. **Compilation:** The `KrakoaCompiler` linearizes the DSL into a register-based Intermediate Representation (IR).
+2. **Contextual Pushing:** When the VM hits a `👤`, `🧠`, or `🧬`, it pushes a new context onto the **DataStack**.
+3. **Trigger Activation (The Heartbeat):** The `➔` (Trigger) token determines the execution persistence.
+
+### ➔ Trigger Operating Modes
+
+The Trigger handler operates in two distinct modes depending on the target and parameters:
+
+| Mode                        | Target            | Behavior                                                                      | Lifecycle                  |
+| --------------------------- | ----------------- | ----------------------------------------------------------------------------- | -------------------------- |
+| **Transient (One-Shot)**    | `🧠`, `🧬`, `📑`  | Executes the block logic exactly once and then performs an implicit return.   | Fire and Forget.           |
+| **Persistent (Agent Mode)** | `👤` (Entity)     | Spawns a "Liveness" frame on the stack. The agent remains "Active" in the VM. | Loop until `:halt` signal. |
+
+### The "Agent Trigger" Lifecycle
+
+When an agent is spawned via `➔ 👤`, the VM does not simply execute and exit. Instead:
+
+- **Persistence:** The stack frame is locked.
+- **Reactive Polling:** The agent waits for `📡` (Signals) or `💬` (Communications).
+- **Graceful Shutdown:** Upon receiving a termination signal or a `:halt` command, the VM executes a **Saving Routine**, flushing the current stack context into the **SurrealDB Knowledge Graph** before de-spawning.
 
 ## 🏁 Conclusion
 
@@ -132,8 +188,8 @@ CrewAI focuses on executing predefined tasks (fire and forget). GenesisAI is bas
 
 3. **The "Quiet Council" Protocol (The Jonathan Hickman Principle):**
 This is the supreme differentiator. Inspired by the _"Quiet Council"_ from X-Men, GenesisAI doesn't encourage conflict or competition between agents for the "best" answer.
-    * **Consensus, not Competition:** Our agents provide unique visions regarding a problem, and their perspectives are collectively synthesized.
-    * **Synergy, not Battle Royale:** The final result is a harmony of perspectives where individual identities are not erased, but used to reach a Single Multi-Faceted Answer.
+   - **Consensus, not Competition:** Our agents provide unique visions regarding a problem, and their perspectives are collectively synthesized.
+   - **Synergy, not Battle Royale:** The final result is a harmony of perspectives where individual identities are not erased, but used to reach a Single Multi-Faceted Answer.
 
 > **GenesisAI is not about forcing the AI to work for you; it is about building a digital society governed by consensus and logic.**
 
@@ -145,29 +201,29 @@ GenesisAI moves away from "blind search" RAG. Instead, it uses the **Krakoa Nexu
 
 Instead of volatile string parsing, internal references are stored as structured JSON objects. This allows the Virtual Machine to perform high-speed "Linking" between the current execution context and the Knowledge Vault without re-parsing overhead.
 
-* **Format:** `{"scope": "self", "path": ["Skills", "Combat"]}`
+- **Format:** `{"scope": "self", "path": ["Skills", "Combat"]}`
 
 ### Programmable RAG Links (`🔗` Instruction)
 
 Knowledge retrieval is a first-class citizen in the DSL. Using the `:link` or specialized `🔗` instructions, the developer defines _when_ and _what_ the agent should remember.
 
-* **Deterministic Fetch:** The VM triggers a semantic search in the **Vector Knowledge Database** only when the Instruction Pointer (IP) hits a link node.
-* **Contextual Anchoring:** Search results are injected directly into the Agent's "Working Memory," preventing the LLM from hallucinating outside its provided lore.
+- **Deterministic Fetch:** The VM triggers a semantic search in the **Vector Knowledge Database** only when the Instruction Pointer (IP) hits a link node.
+- **Contextual Anchoring:** Search results are injected directly into the Agent's "Working Memory," preventing the LLM from hallucinating outside its provided lore.
 
 ### The Multimodal Ingestion Pipeline (The "Librarian")
 
 To feed the Knowledge Vault, GenesisAI uses a specialized pipeline:
 
-* **Docling (IBM):** Used to transform PDFs, HTML, and even comic book panels (via OCR/Layout analysis) into clean, hierarchical Markdown.
-* **Browserless Integration:** A headless Chrome orchestration that allows the framework to "browse" and download real-time data or lore updates without the limitations of static APIs.
-* **Vectorization:** Processed data is fragmented, vectorized, and stored with metadata that points back to the original Krakoan Script.
+- **Docling (IBM):** Used to transform PDFs, HTML, and even comic book panels (via OCR/Layout analysis) into clean, hierarchical Markdown.
+- **Browserless Integration:** A headless Chrome orchestration that allows the framework to "browse" and download real-time data or lore updates without the limitations of static APIs.
+- **Vectorization:** Processed data is fragmented, vectorized, and stored with metadata that points back to the original Krakoan Script.
 
 ### Augmented Krakoan DSL Integration for RAG
 
 The framework treats **Knowledge as a Programmable Resource**. Using a unified `:ingest` command, the developer can hydrate the Agent's memory from multiple sources, ensuring that the AI has access to both static lore and real-time information.
 
-* **Static Internal Fragments:** You can define `:data` blocks directly in the Krakoan script. At runtime, the `:ingest` command maps these local references to the **Vector Knowledge Database**.
-  * _Use case:_ Defining Wade’s core personality or "unbreakable" rules of the world.
-* **Dynamic Web Acquisition:** By providing a URL or a search query as a parameter to the `:ingest` instruction, the VM triggers the **Multimodal Pipeline** (Puppeteer + Docling).
-  * _Use case:_ Wade needs to "learn" about a real-world event or a new comic book release before responding.
-* **Deterministic Persistence:** Once ingested, information is no longer just "text in a prompt." It becomes a persistent vector node. The agent doesn't "search the internet" every time it speaks; it queries its own **curated memory** through the `:link` instruction.
+- **Static Internal Fragments:** You can define `:data` blocks directly in the Krakoan script. At runtime, the `:ingest` command maps these local references to the **Vector Knowledge Database**.
+  - _Use case:_ Defining Wade’s core personality or "unbreakable" rules of the world.
+- **Dynamic Web Acquisition:** By providing a URL or a search query as a parameter to the `:ingest` instruction, the VM triggers the **Multimodal Pipeline** (Puppeteer + Docling).
+  - _Use case:_ Wade needs to "learn" about a real-world event or a new comic book release before responding.
+- **Deterministic Persistence:** Once ingested, information is no longer just "text in a prompt." It becomes a persistent vector node. The agent doesn't "search the internet" every time it speaks; it queries its own **curated memory** through the `:link` instruction.

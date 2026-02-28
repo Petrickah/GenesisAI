@@ -14,6 +14,13 @@ The project is structured as a TypeScript-based engine that compiles Krakoa scri
 - **`app/src/schema/`**: Defines the data structures using `Zod` for strict validation of the AST and IR.
 - **`app/src/ui/`**: Contains the `KrakoaREPL.ts`, providing an interactive console for testing and debugging Krakoa scripts.
 
+### 🧬 Execution Model
+
+The system uses a dual-mode trigger system (`➔`) as described in the `README.md` (See: **The Spawning Ritual**):
+
+- **Transient Mode:** One-shot execution for Concepts and Logic.
+- **Persistent Mode:** Locked-frame execution for Entities (`👤`), enabling reactive agent behavior and state persistence.
+
 ## 🛠️ Key Technologies
 
 - **TypeScript**: Main development language.
