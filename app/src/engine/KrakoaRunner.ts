@@ -2,6 +2,7 @@ import { type KrakoanInfo, type KrakoanInfoNullable, type KrakoanProgram } from 
 import Inheritance from "./opcodes/Inheritance.js";
 import Speech from "./opcodes/Speech.js";
 import Trigger from "./opcodes/Trigger.js";
+import Contextual from "./opcodes/Contextual.js";
 
 export type InstructionOpcode = string | number;
 export type ContextType = Record<string, any>;
@@ -16,9 +17,12 @@ export class KrakoanRunner {
     "🔗": Inheritance,
     "💬": Speech,
     "📡": Speech,
+    "👤": Contextual,
+    "🧠": Contextual,
+    "🧬": Contextual,
   }
 
-  constructor(public Program: KrakoanProgram ) {
+  constructor(public Program: KrakoanProgram) {
     this.reset();
   }
 
@@ -99,7 +103,7 @@ export class KrakoanRunner {
   }
 
   private fetch() : KrakoanInfoNullable {
-    if (this.Program === null) return null;
+    if (this.Program === null || this.Program === undefined) return null;
     const __currIP = this.Registers["IP"] as number;
     const currInstruction = this.Program.code[__currIP];
     if (currInstruction !== undefined) {
@@ -134,7 +138,7 @@ export class KrakoanRunner {
   }
 
   public reset() {
-    if (this.Program === null) return;
+    if (this.Program === null || this.Program === undefined) return;
     this.DataStack = [];
     this.Registers['IP'] = this.Program.entry;
     this.Registers['Status'] = 'RUNNING';

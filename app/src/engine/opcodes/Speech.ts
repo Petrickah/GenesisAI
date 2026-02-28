@@ -9,6 +9,11 @@ export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
   const { type, params } = node.instruction;
   const currentContext = runner.DataStack[runner.Registers.BSP] || {};
 
+  // Signal to the trigger that this instruction is executing
+  if (currentContext && currentContext.__trigger) {
+    currentContext.__isExecuting = true;
+  }
+
   // Handle different speech types
   switch (type) {
     case "💬": // Communication token

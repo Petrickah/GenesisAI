@@ -31,6 +31,7 @@ export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
     if (__cycleCount + 1 < __cycleMaxim) {
       parent[triggerName].__cycleCount++;
       runner.Registers.IP = parent[triggerName].__curAddress;
+      parent.__isExecuting = false; // Reset status for next cycle
       return true;
     }
 

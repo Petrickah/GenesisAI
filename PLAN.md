@@ -16,8 +16,8 @@ As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is ope
 
 ### 🏗️ In Progress
 
-- **Opcode Expansion**: Implementing the full "Cypher Codex" logic within the VM. Currently, only `➔` (Trigger), `🔗` (Inheritance/Link), and `💬`/`📡` (Speech/Signal) have active handlers. Opcodes like `📌` (State), `⚓` (Anchor), `🧬` (Logic), and `🔃` (Jump) are currently missing execution logic.
-- **VM Refinement**: Finalizing the register-based execution model and stack frame management.
+- **Opcode Expansion**: Implementing the full "Cypher Codex" logic within the VM. Currently, `➔` (Trigger), `👤` (Entity), `🧠` (Concept), `🧬` (Logic), and `💬`/`📡` (Speech/Signal) have active handlers. Opcodes like `📌` (State), `⚓` (Anchor), `🔗` (Inheritance - partial), and `🔃` (Jump) are currently missing full execution logic.
+- **VM Refinement**: The register-based execution model and stack frame management (including the `__isExecuting` implicit return logic) are finalized.
 - **Semantic Validation**: Deep reference checking in the compiler is active but needs stress testing for circular dependencies and complex graph paths.
 - **Watcher Fix**: The `KrakoaWatcher.ts` currently looks for `.kts` files while the engine and programs use `.ksl`.
 
@@ -97,6 +97,7 @@ As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is ope
 
 ## 🛠️ Immediate Next Steps (Action Items)
 
-- [ ] **VM Opcodes**: Implement handlers for `📌` (State), `⚓` (Anchor), and `🧬` (Logic) in `app/src/engine/opcodes/`.
+- [ ] **VM Opcodes**: Implement execution logic for `📌` (State), `⚓` (Anchor), `🔃` (Jump), and full `🔗` (Inheritance).
 - [ ] **Persistence**: Initialize the `docker-compose.yml` with SurrealDB and update `package.json` scripts for DB migration.
 - [ ] **Documentation**: Update the Cypher Codex with the final technical specifications for each opcode's runtime behavior.
+- [ ] **Watcher Fix**: Correct the file extension logic in `KrakoaWatcher.ts`.
