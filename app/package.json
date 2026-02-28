@@ -15,7 +15,6 @@
   "author": "Tiberiu Petre",
   "license": "MIT",
   "dependencies": {
-    "@types/express": "^5.0.6",
     "axios": "^1.13.2",
     "chalk": "^4.1.2",
     "chokidar": "^5.0.0",
@@ -34,7 +33,7 @@
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.19.31",
+    "@types/node": "^25.3.2",
     "@types/pg": "^8.16.0",
     "peggy": "^5.0.6",
     "tsx": "^4.21.0",

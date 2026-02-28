@@ -1,75 +1,103 @@
 import { z } from "zod";
 
-// Define more specific types for better type safety
-const PoolValue = z.union([z.string(), z.number(), z.undefined()])
-const KrakoanType = z.union([z.string(), z.literal('➔'), z.literal('🔗'), z.literal('💬'), z.literal('⚓')])
-const KrakoanTagKind = z.union([z.literal('hashtag'), z.literal('reference'), z.literal('state')])
+/**
+ * Lambda Expression Schema
+ * Represents the λ(...) blocks in the DSL
+ */
+export const KrakoanLambdaSchema = z.object({
+  type: z.literal(":lambda"),
+  code: z.string(),
+}).strict();
 
-// More precise types for instruction parameters
-const KrakoanParams = z.record(z.string(), z.union([
+/**
+ * Poolable String
+ * During compilation, strings are pooled and replaced by their index (number).
+ * Schemas must accept both during the transition.
+ */
+const PoolableString = z.union([z.string(), z.number()]);
+
+/**
+ * Parameter Value Schema
+ * Valid values for instruction parameters (e.g., id: "value", hp: λ(ctx.hp))
+ */
+const KrakoanValueSchema = z.union([
   z.string(),
   z.number(),
   z.boolean(),
   z.null(),
+  KrakoanLambdaSchema,
   z.array(z.any()),
-  z.record(z.any(), z.any())
-]))
+  z.record(z.string(), z.any())
+]);
 
-// Optimized tags schema with stricter validation
+/**
+ * Tag / Reference Schema
+ * Represents hashtags (#Tag) and references (@Path::To::Node)
+ */
 export const KrakoanTagsSchema = z.object({
-  root: z.string(), // Always string for root references
-  kind: KrakoanTagKind,
+  root: PoolableString,
+  kind: z.union([z.literal('hashtag'), z.literal('reference'), z.literal('state')]),
   original: z.string().optional(),
-  target: z.string().optional(),
+  target: PoolableString.optional(),
   segments: z.array(z.union([
-    z.string(),
+    PoolableString,
     z.object({
       kind: z.literal('hashtag'),
-      root: z.string()
+      root: PoolableString
     })
   ])).default([]),
   address: z.number().optional()
-}).strict()
+}).strict();
 
-// Optimized node schema with stricter validation
+/**
+ * Node Schema (AST)
+ * Represents the structure returned by the Peggy.js parser
+ */
 export const KrakoanNodeSchema = z.object({
-  type: KrakoanType,
-  params: KrakoanParams,
-  body: z.array(z.lazy((): z.ZodObject => KrakoanNodeSchema)).default([]),
+  type: z.string(), // AST always has string types
+  params: z.record(z.string(), KrakoanValueSchema).default({}),
+  body: z.array(z.lazy((): z.ZodObject<any> => KrakoanNodeSchema)).default([]),
   tags: z.array(KrakoanTagsSchema).default([]),
-}).strict()
+}).strict();
 
-// Optimized instruction schema
+/**
+ * Compiled Instruction Schema (IR)
+ * Represents a single executable instruction in the VM
+ */
 export const KrakoanInstructionSchema = z.object({
-  id: z.string().optional(), // Can be string or number in practice
-  type: KrakoanType,
-  timestamp: z.number().optional().default(() => Date.now()),
-  params: KrakoanParams.default({}),
+  id: PoolableString.optional(),
+  type: PoolableString,
+  timestamp: z.number().default(() => Date.now()),
+  params: z.record(z.string(), KrakoanValueSchema).default({}),
   tags: z.array(KrakoanTagsSchema).optional(),
-  next: z.array(z.number()).min(1, "At least one next instruction required"),
-}).strict()
+  next: z.array(z.number()).min(1),
+}).strict();
 
-// Optimized program schema with proper text type
+
+/**
+ * Program Schema
+ * The complete compiled IR bundle
+ */
 export const KrakoanProgramSchema = z.object({
   entry: z.number().nonnegative(),
-  symbols: z.record(z.string(), z.number()).optional().default({}),
-  text: z.record(z.number(), z.string()), // More specific than z.any()
-  code: z.record(z.number(), KrakoanInstructionSchema),
-}).strict().nullable()
+  symbols: z.record(z.string(), z.number()).default({}),
+  text: z.array(z.string()).default([]),
+  code: z.record(z.coerce.number(), KrakoanInstructionSchema),
+}).strict().nullable().optional();
 
-// Optimized info schemas
+/**
+ * Execution Frame Info
+ */
 export const KrakoanInfoBaseSchema = z.object({
   instruction: KrakoanInstructionSchema,
   address: z.number().nonnegative(),
   next: z.number().nonnegative(),
-}).strict()
+}).strict();
 
-export const KrakoanInfoSchema = KrakoanInfoBaseSchema.nullable()
-
-// Type exports
+export type KrakoanLambda = z.infer<typeof KrakoanLambdaSchema>;
 export type KrakoanTags = z.infer<typeof KrakoanTagsSchema>;
 export type KrakoanNode = z.infer<typeof KrakoanNodeSchema>;
 export type KrakoanInstruction = z.infer<typeof KrakoanInstructionSchema>;
 export type KrakoanProgram = z.infer<typeof KrakoanProgramSchema>;
 export type KrakoanInfo = z.infer<typeof KrakoanInfoBaseSchema>;
-export type KrakoanInfoNullable = z.infer<typeof KrakoanInfoSchema>;
+export type KrakoanInfoNullable = KrakoanInfo | null;

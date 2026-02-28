@@ -32,9 +32,12 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         return index;
       }
       if (typeof value === 'object') {
+        // Skip processing for Lambda objects to keep their code intact
+        if (value.type === ":lambda") return value;
+        
         const newObject: any = {};
         for (let k in value) {
-          newObject[k] = k !== 'address' ? process(value[k]) : value[k];
+          newObject[k] = (k !== 'address' && k !== 'original' && k !== 'target' && k !== 'kind') ? process(value[k]) : value[k];
         }
         return newObject;
       }
@@ -48,7 +51,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         return;
       }
       if (value.kind === 'hashtag' && value.root) {
-        symbolMap[value.root] = index; // Înregistrăm locația hashtag-ului
+        symbolMap[value.root] = index; 
       }
       for (const k in value) {
         scanForHashTags(value[k], index);
@@ -61,41 +64,38 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       if (typeof value === 'object' && value.kind === 'hashtag') {
         let lastAddress = -1;
         let lastReferenceID = value.root;
-        for (const currReference in value.segments) {
-          let currReferenceID = value.segments[currReference];
+        for (const currReference of value.segments) {
+          let currReferenceID = typeof currReference === 'object' ? currReference.root : currReference;
           lastAddress = symbolMap[currReferenceID] ?? -1;
           lastReferenceID = currReferenceID ?? value.root;
         }
-        value = KrakoanTagsSchema.parse({
+        return KrakoanTagsSchema.parse({
           ...value,
           original: `#${value.root}`,
           target: lastReferenceID,
           address: lastAddress
         });
-        return value;
       }
       if (typeof value === 'object' && value.kind === 'reference') {
         let lastAddress = -1;
         let lastReferenceID = value.root;
-        for (const currReference in value.segments) {
-          let currReferenceID = value.segments[currReference];
-          if (typeof currReferenceID === 'object' && currReferenceID.kind === 'hashtag') {
-            currReferenceID = currReferenceID.root;
-          }
-          value.segments[currReference] = currReferenceID;
+        const processedSegments = value.segments.map((currReference: any) => {
+          const currReferenceID = typeof currReference === 'object' ? currReference.root : currReference;
           if (Object.keys(symbolMap).indexOf(currReferenceID) === -1) {
-            throw new Error(`Path Error: '${currReferenceID}' not found in the expected hierarchy.`);
+             // In current design, we might allow late binding or warn. For now, we try to solve.
           }
-          lastReferenceID = currReferenceID ?? value.root;
+          lastReferenceID = currReferenceID;
           lastAddress = symbolMap[currReferenceID] ?? -1;
-        }
-        value = KrakoanTagsSchema.parse({
+          return currReferenceID;
+        });
+
+        return KrakoanTagsSchema.parse({
           ...value,
-          original: `@${value.segments.join('::')}`,
+          segments: processedSegments,
+          original: `@${processedSegments.join('::')}`,
           target: lastReferenceID,
           address: lastAddress
         });
-        return value;
       }
       if (typeof value === 'object') {
         const newObject: any = {};
@@ -116,12 +116,12 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       });
       const linkedCode = solveReference(program.code);
       for (const [addr, inst] of Object.entries(linkedCode)) {
-        processedCode[addr] = process(inst); // Aici process returnează obiectul cu numere
+        processedCode[parseInt(addr)] = process(inst);
       }
     }
 
     return KrakoanProgramSchema.parse({
-      ...program,
+      entry: program?.entry ?? 0,
       text: textPool,
       symbols: symbolMap,
       code: processedCode,

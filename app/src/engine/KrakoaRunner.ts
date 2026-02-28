@@ -119,9 +119,12 @@ export class KrakoanRunner {
     if (typeof value === 'number') return this.Program.text[value];
     if (Array.isArray(value)) return value.map(item => this.decode(item));
     if (typeof value === 'object') {
+      // Don't decode Lambda objects, they are used as is in evalLambda
+      if (value.type === ":lambda") return value;
+      
       const newObject: Record<string, any> = {};
       for (let key in value) {
-        newObject[key] = (key !== "address" && key !== "next") 
+        newObject[key] = (key !== "address" && key !== "next" && key !== "original" && key !== "target") 
           ? this.decode(value[key])
           : value[key];
       }

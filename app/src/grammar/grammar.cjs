@@ -34,7 +34,7 @@
 
   function buildReference(symbol, kind, root, members) {
     const path = solveOriginalReference(members);
-    const finalPath = path ? `::"${path}"` : '';
+    const finalPath = path ? `::${path}` : '';
     return {
       root: root,
       kind: kind,
@@ -46,12 +46,12 @@
     };
   }
 
-  function buildNode(type, body, tags, params) {
+  function buildNode(type, body = [], tags = [], params = {}) {
     return {
-      type,
-      body,
-      tags,
-      params,
+      type: String(type),
+      params: params,
+      body: body,
+      tags: tags,
     };
   }
 
