@@ -33,39 +33,43 @@ As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is ope
 *Goal: Transform ephemeral execution into persistent graph-based knowledge.*
 
 1. **SurrealDB Integration**:
-    - Deploy SurrealDB via Docker.
-    - Establish an active connection between the `KrakoaRunner` and SurrealDB.
+   - [ ] Deploy SurrealDB via Docker.
+   - [ ] Establish an active connection between the `KrakoaRunner` and SurrealDB.
 2. **Graph Linking Logic**:
-    - Implement `🔗` (Inheritance) directly in SurrealQL to allow dynamic property inheritance at the database level.
-    - Map `👤` (Entity) and `🧠` (Concept) nodes to persistent SurrealDB records.
+   - [ ] Implement `🔗` (Inheritance) directly in SurrealQL to allow dynamic property inheritance at the database level.
+   - [ ] Map `👤` (Entity) and `🧠` (Concept) nodes to persistent SurrealDB records.
 3. **The "Ledger" Implementation**:
-    - Store every execution state and relationship in a Vector Knowledge Database.
-    - Implement "Ancestral Retrieval": Fetching an agent's traits by traversing its inheritance graph.
+   - [ ] Store every execution state and relationship in a Vector Knowledge Database.
+   - [ ] Implement "Ancestral Retrieval": Fetching an agent's traits by traversing its inheritance graph.
 
 ### Phase 3: The Intelligence (Week 4 - AI Orchestration)
 
 *Goal: Bridge the DSL IR with LLM execution.*
 
 1. **System Prompt Engineering**:
-    - Develop "Master Prompts" that instruct the LLM to interpret the DSL's Intermediate Representation (IR).
-    - Define the output schema for LLMs to respond in JSON objects mapping back to the DSL logic.
+   - [ ] Develop "Master Prompts" that instruct the LLM to interpret the DSL's Intermediate Representation (IR).
+   - [ ] Define the output schema for LLMs to respond in JSON objects mapping back to the DSL logic.
 2. **Closed-Loop Interaction**:
-    - Implement the `Prompt -> DSL IR -> Context RAG -> Answer` loop.
-    - Test multi-agent interaction using the "Quiet Council" protocol (consensus-based synthesis).
+   - [ ] Implement the `Prompt -> DSL IR -> Context RAG -> Answer` loop.
+   - [ ] Test multi-agent interaction using the "Quiet Council" protocol (consensus-based synthesis).
 3. **Local LLM Integration**:
-    - Fully utilize the `ollama` dependency to run models locally, ensuring data privacy and "Semantical Determinism".
+   - [ ] Fully utilize the `ollama` dependency to run models locally, ensuring data privacy and "Semantical Determinism".
 
 ### Phase 4: The Librarian (Beyond Week 4 - Advanced RAG)
 
 *Goal: Multimodal ingestion and automated lore governance.*
 
 1. **Multimodal Pipeline**:
-    - Integrate `Docling` for hierarchical PDF/HTML ingestion into the Knowledge Vault.
-    - Implement the `:ingest` command for dynamic web acquisition (Browserless/Puppeteer).
+   - [ ] Integrate `Docling` for hierarchical PDF/HTML ingestion into the Knowledge Vault.
+   - [ ] Implement the `:ingest` command for dynamic web acquisition (Browserless/Puppeteer).
 2. **Contextual Anchoring**:
-    - Fine-tune the "Deterministic Fetch" logic where the VM triggers semantic searches based on `⚓` (Anchor) conditions.
+   - [ ] Fine-tune the "Deterministic Fetch" logic where the VM triggers semantic searches based on `⚓` (Anchor) conditions.
 3. **Reality Anchors Validation**:
-    - Implement automated checks to ensure LLM outputs do not violate the "Immutable Logic" defined in the Krakoan scripts.
+   - [ ] Implement automated checks to ensure LLM outputs do not violate the "Immutable Logic" defined in the Krakoan scripts.
+4. **System Prompt Writing**:
+   - [ ] Write the System Prompts for adapting LLM answers.
+5. **Scalability Assessment**:
+   - [ ] Evaluating the migration to a Monorepo (TurboRepo) to separate the Core Engine from the CLI and future Dashboards.
 
 ---
 
