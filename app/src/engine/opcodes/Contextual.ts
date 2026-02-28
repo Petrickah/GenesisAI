@@ -1,8 +1,9 @@
 import type { KrakoanInfo } from "../../schema/krakoa.schema.js";
 import type { KrakoanRunner } from "../KrakoaRunner.js";
+import { evalLambda } from "../KrakoaEvaluator.js";
 
 /**
- * Handles contextual/structural instructions (👤, 🧠, 🧬)
+ * Handles contextual/structural instructions (👤, 🧠, 🧬, 📌, 📂, etc.)
  * Pushes a new context frame onto the stack.
  */
 export default async (node: KrakoanInfo, runner: KrakoanRunner): Promise<boolean> => {
@@ -15,15 +16,32 @@ export default async (node: KrakoanInfo, runner: KrakoanRunner): Promise<boolean
     parentContext.__isExecuting = true;
   }
   
-  // Create a new context from parameters
-  const newContext = {
-    [id]: {
-      ...params,
-      __type: type,
-      __address: node.address,
-      __timestamp: Date.now()
-    }
+  // Dynamically evaluate parameters (Lambdas) before storage
+  const evaluatedParams: Record<string, any> = {};
+  for (const key in params) {
+    evaluatedParams[key] = evalLambda(runner, `${id}.${key}`, params[key]);
+  }
+
+  // Create a new context from evaluated parameters
+  const contextData = {
+    ...evaluatedParams,
+    __type: type,
+    __address: node.address,
+    __timestamp: Date.now()
   };
+
+  const newContext = {
+    [id]: contextData
+  };
+
+  // Store in global symbols for absorption
+  runner.Symbols[id] = contextData;
+
+  // If this is a state (📌) or data (📂) node, also merge directly into frame
+  if (type === "📌" || type === "📂") {
+    const val = evaluatedParams.value || evaluatedParams.content || evaluatedParams;
+    newContext[id] = val;
+  }
 
   // Push to stack and update Stack Pointer
   runner.DataStack.push(newContext);

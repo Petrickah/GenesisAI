@@ -11,18 +11,18 @@ As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is ope
 - **DSL Grammar (`Peggy.js`)**: Lexicon and semantic token parsing are finalized.
 - **Compiler (`KrakoaCompiler.ts`)**: AST to IR transformation, including symbol mapping and reference linking, is stable.
 - **Runner/VM (`KrakoaRunner.ts`)**: Register-based VM capable of executing instructions and handling execution contexts.
+- **Eager Lambda Evaluation**: Centralized `KrakoaEvaluator` with recursive stack lookup and eager parameter resolution.
+- **Inheritance Logic (🔗)**: Fully implemented "Bumerang" logic with proactive data absorption and symbol mapping.
+- **State Management (📌)**: Eagerly evaluated state pins are now integrated into the context stack.
 - **Interactive REPL**: Debugger window, step-through execution, and snippet support are available.
 - **Hot-Reloading Environment**: `tsx` and `chokidar` integrated for rapid development cycles.
-- **Core Documentation**: Comprehensive JSDoc coverage for the compiler, runner, engine, and opcode handlers.
-- **Architectural Specification**: Documented the "Spawning Ritual" and dual-mode Trigger (Transient vs. Persistent) logic in `README.md`.
-- **Reference Script Documentation**: Full inline documentation for the `Deadpool.ksl` reference implementation.
-- **Watcher Stabilization**: Unified file extension handling (.ksl) across the engine and watcher.
+- **Reference Script Implementation**: Successfully executed `Deadpool.ksl` with complex inheritance and fragment extraction.
 
 ### 🏗️ In Progress
 
-- **Opcode Expansion**: Implementing the full "Cypher Codex" logic within the VM. Currently, `➔` (Trigger), `👤` (Entity), `🧠` (Concept), `🧬` (Logic), and `💬`/`📡` (Speech/Signal) have active handlers. Opcodes like `📌` (State), `⚓` (Anchor), `🔗` (Inheritance - partial), and `🔃` (Jump) are currently missing full execution logic.
-- **VM Refinement**: The register-based execution model and stack frame management (including the `__isExecuting` implicit return logic) are finalized.
-- **Semantic Validation**: Deep reference checking in the compiler is active but needs stress testing for circular dependencies and complex graph paths.
+- **Opcode Expansion**: Implementing the remaining logic for `⚓` (Anchor) and `🔃` (Jump). Currently, `➔` (Trigger), `👤` (Entity), `🧠` (Concept), `🧬` (Logic), `📌` (State), `🔗` (Inheritance), and `💬`/`📡` (Speech/Signal) are fully operational.
+- **VM Refinement**: The register-based execution model and stack frame management (including the `__isExecuting` implicit return logic) are finalized and validated.
+- **Semantic Validation**: Deep reference checking in the compiler is active and has been validated through the Deadpool reference implementation.
 
 ---
 

@@ -82,7 +82,7 @@ export default k/*ts*/`
     ➔ 💬("Fourth Wall Breach", to: "Architect") {
       // 🎭 (INTENT): Expresses the emotional or social stance of the speech.
       🎭("Jesting", breakWall: "true");
-      📂("Message", content: λ(cts["Chimichanga Optimized"]));
+      📂("Message", content: λ(ctx["Chimichanga Optimized"]));
       🔗("Speech Done", mode: "Return");
     };
 

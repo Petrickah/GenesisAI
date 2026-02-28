@@ -32,6 +32,7 @@ export type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Pro
 export class KrakoanRunner {
   public Registers: ContextType = {};
   public DataStack: ContextStackType = [];
+  public Symbols: Record<string, any> = {}; // Global symbol storage for absorption
   
   /**
    * Mapping of functional tokens (emojis) to their execution logic.
@@ -44,6 +45,17 @@ export class KrakoanRunner {
     "👤": Contextual,
     "🧠": Contextual,
     "🧬": Contextual,
+    "📌": Contextual,
+    "📂": Contextual,
+    "🧩": Contextual,
+    "📑": Contextual,
+    "🔓": Contextual,
+    "🩺": Contextual,
+    "💉": Contextual,
+    "🛡️": Contextual,
+    "🚀": Contextual,
+    "🎭": Contextual,
+    "📦": Contextual,
   }
 
   /**
@@ -85,41 +97,6 @@ export class KrakoanRunner {
     }
 
     return true;
-  }
-
-  /**
-   * Evaluates a Lambda expression within the current execution context.
-   * Uses a safe Proxy to expose only designated context variables to the lambda.
-   * 
-   * @param id - The identifier for the lambda (for logging).
-   * @param value - The KrakoanLambda object.
-   * @returns The result of the lambda execution.
-   */
-  private evalLambda(id: string, value: any): any {
-    const currContext = this.DataStack[this.Registers['StackPointer']] ?? {};
-    const safeContext = new Proxy(currContext, {
-      get: (target, prop: string) => {
-        if (prop === "Tags") {
-          return new Proxy(target["Tags"] || {}, {
-            get: (t, p) => (p in t ? t[p] : false)
-          });
-        }
-        return target[prop];
-      }
-    });
-    if (value && value.type === ":lambda") {
-      try {
-        const fn = new Function('ctx', value.code);
-        const result = fn(safeContext)
-        console.log(`🔍 Evaling Lambda for ${id}. Context keys: ${Object.keys(safeContext)} Result: ${result}`);
-        return result;
-      } catch (e) {
-        console.error(`❌ Lambda Error for ${id}:`, e);
-        return undefined;
-      }
-    } else {
-      return value;
-    }
   }
 
   /**
@@ -207,10 +184,11 @@ export class KrakoanRunner {
    */
   public reset() {
     if (this.Program === null || this.Program === undefined) return;
-    this.DataStack = [];
+    this.DataStack = [{}]; // Global context at index 0
+    this.Symbols = {}; // Reset global symbol storage
     this.Registers['IP'] = this.Program.entry;
     this.Registers['Status'] = 'RUNNING';
-    this.Registers['ESP'] = this.DataStack.length - 1;
-    this.Registers['BSP'] = this.Registers['ESP'];
+    this.Registers['ESP'] = 0;
+    this.Registers['BSP'] = 0;
   }
 }

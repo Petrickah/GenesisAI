@@ -187,7 +187,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
    * Prevents runtime reference errors in the VM.
    */
   function verifyReference(segments: string[], forest: any[]): boolean {
-    console.log("--- Semantic Check Start ---");
     let currentScope = findNodeDeep(forest, segments[0]?.replace(/^[@#]/, ''));
     if (!currentScope) {
       console.error(`❌ CRITICAL: Root segment '${segments[0]}' not found in forest!`);
