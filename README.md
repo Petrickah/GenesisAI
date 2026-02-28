@@ -29,41 +29,41 @@ The Domain Specific Language (DSL) used in GenesisAI, called Krakoa Nexus DSL, u
 
 #### **1. Structural Tokens (The Skeleton)**
 
-| **Token** | **Type** | **Description** |
-| ---- | ---- | ---- |
-| **📑** | **(FRAGMENT)** | Base Knowledge Unity (a Document/RAG Entry). |
-| **🧠** | **(CONCEPT)** | An Abstract Idea or an In-Universe Rule. |
-| **👤** | **(ENTITY)** | The Primary Actor (a Character or Organization). |
-| **📦** | **(COLLECTION)** | A Bundle of Entities, Fragments or Concepts. (ex: "The X-Men"). |
+| **Token** | **Type**         | **Description**                                                                               |
+| --------- | ---------------- | --------------------------------------------------------------------------------------------- |
+| **📑**    | **(FRAGMENT)**   | Base Knowledge Unity (a Document/RAG Entry).                                                  |
+| **🧠**    | **(CONCEPT)**    | An Abstract Idea or an In-Universe Rule.                                                      |
+| **👤**    | **(ENTITY)**     | The Primary Actor (a Character or Organization).                                              |
+| **📦**    | **(COLLECTION)** | A Bundle of Entities, Fragments or Concepts. (ex: "The X-Men").                               |
 
 #### **2. Logic & Property Tokens (The DNA)**
 
-| **Token** | **Type** | **Description** |
-| ---- | ---- | ---- |
-| **🧬** | **(LOGIC)** | Fixed Attributes, Abilities, Source Rules ("Business Rules"). Defines the behavior of an AI Agent |
-| **🔓** | **(ASSET)** | Objects, Artifacts (ex: Zhuque Fans), Resources, etc. (In-Universe Things) |
-| **📌** | **(STATE)** | States / Variable Values (Ex: Temperature, HP, Status, Locations) |
-| **🔑** | **(TAG)** | Metadata used for fast indexation and data retrieval. |
-| **🧩** | **(STANCE)** | The Overall and Variable Behavior of an Agent. It can change depending on the context. |
-| **⌛** | **(TIME)** | The Timestamp at which the Action takes place in. |
+| **Token** | **Type**     | **Description**                                                                                    |
+| --------- | ------------ | -------------------------------------------------------------------------------------------------- |
+| **🧬**    | **(LOGIC)**  | Fixed Attributes, Abilities, Source Rules ("Business Rules"). Defines the behavior of an AI Agent  |
+| **🔓**    | **(ASSET)**  | Objects, Artifacts (ex: Zhuque Fans), Resources, etc. (In-Universe Things)                         |
+| **📌**    | **(STATE)**  | States / Variable Values (Ex: Temperature, HP, Status, Locations)                                  |
+| **🔑**    | **(TAG)**    | Metadata used for fast indexation and data retrieval.                                              |
+| **🧩**    | **(STANCE)** | The Overall and Variable Behavior of an Agent. It can change depending on the context.             |
+| **⌛**    | **(TIME)**   | The Timestamp at which the Action takes place in.                                                  |
 
 #### **3. Relational Tokens (The Graph)**
 
-| **Token** | **Type** | **Description** |
-| ---- | ---- | ---- |
-| **🔗** | **(LINK)** | A General Relationship (a Knowledge Graph Edge) |
-| **🔱** | **(AUTHORITY)** | An Hierarchical Relationship (a Master/Slave, Parent/Child) |
-| **🤝** | **(ALLIANCE)** | A Cooperation Relationship or a Group Affiliation (ex. Orchis, X-Men, Overwatch, Talon) |
-| **⚔️** | **(CONFLICT)** | An Rivalry Relationship or a Restriction (Incompatible with...) |
+| **Token** | **Type**         | **Description**                                                                                |
+| --------- | ---------------- | ---------------------------------------------------------------------------------------------- |
+| **🔗**    | **(LINK)**       | A General Relationship (a Knowledge Graph Edge)                                                |
+| **🔱**    | **(AUTHORITY)**  | An Hierarchical Relationship (a Master/Slave, Parent/Child)                                    |
+| **🤝**    | **(ALLIANCE)**   | A Cooperation Relationship or a Group Affiliation (ex. Orchis, X-Men, Overwatch, Talon)        |
+| **⚔️**    | **(CONFLICT)**   | An Rivalry Relationship or a Restriction (Incompatible with...)                                |
 
 #### **4. Execution & Validation (The Pulse)**
 
-| **Token** | **Type** | **Description** |
-| ---- | ---- | ---- |
-| **➔** | **(TRIGGER)** | The Entrypoint of an Action or Logical Path. |
-| **⚓** | **(ANCHOR)** | The Absolute Truth (Single Source of Truth). It can't be altered by the AI Agent |
-| **📡** | **(SIGNAL)** | An Event Broadcast which changes the current global context. |
-| **💬** | **(COMM)** | A Communication Interface between the user or the agents. |
+| **Token** | **Type**         | **Description**                                                                                |
+| --------- | ---------------- | ---------------------------------------------------------------------------------------------- |
+| **➔**     | **(TRIGGER)**    | The Entrypoint of an Action or Logical Path.                                                   |
+| **⚓**    | **(ANCHOR)**     | The Absolute Truth (Single Source of Truth). It can't be altered by the AI Agent               |
+| **📡**    | **(SIGNAL)**     | An Event Broadcast which changes the current global context.                                   |
+| **💬**    | **(COMM)**       | A Communication Interface between the user or the agents.                                      |
 
 ### 💻 Reference Implementation (The Wade Example)
 
@@ -104,33 +104,6 @@ To be sure the data integrity is maintained we use a reference implementation. I
     };
 };
 ```
-
-## 🗺️ One month Roadmap (The Genesis Phase)
-
-### **1st Week: Defining the lexicon and grammar**
-
-* [x] Configuring the development environment (Node.js + TypeScript + Docker + Ollama)
-* [x] Finalizing the DSL Specification (The Cypher Codex)
-* [X] Implementing the parser using a Pushdown Automaton (PDA/PEG/Peggy.js) using TypeScript.
-
-### **2nd Week: The Parsing Engine (The Compiler)**
-
-* [X] Compiling the tokens into JSON structured objects for a runner.
-* [X] The sintactic validation of the `.krakoa` scripts.
-* [ ] Building the Virtual Machine for executing Krakoan Scripts.
-
-### **3rd Week: Integrating with a Vector Knowledge Database (The Ledger)**
-
-* [ ] Building the active connection between the Parser and the Database.
-* [ ] Implementing the "Inheritance" logic and "Graph Linking" directly into SurrealQL.
-* [ ] Testing the first complex entities (Anran & Wuyang) with persistent relationships.
-
-### **4th Week: AI Interface (The Intelligence)**
-
-* [ ] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to adapt their answers based on the Krakoa Nexus DSL definitions.
-* [ ] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to write JSON Objects based on the Intermediate Representation (IR) of Krakoa Nexus DSL.
-* [ ] Testing the first close loop: Prompt -> DSL IR -> Context RAG -> Answer.
-* [ ] Testing the first interaction with an AI Agent.
 
 ## 🏁 Conclusion
 
