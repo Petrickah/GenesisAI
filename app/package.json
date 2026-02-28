@@ -9,7 +9,6 @@
     "build:grammar": "npx peggy --format commonjs --output src/grammar/grammar.cjs src/grammar/grammar.pegjs",
     "start": "tsx src/index.ts --repl",
     "watch": "tsx watch src/index.ts",
-    "claude": "claude --model ministral-3:14b",
     "watch:grammar": "chokidar \"src/grammar/grammar.pegjs\" -c \"npm run build:grammar\""
   },
   "keywords": [],
