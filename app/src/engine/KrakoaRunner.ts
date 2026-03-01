@@ -5,7 +5,7 @@
  * Manages execution state, registers, and the contextual data stack.
  */
 
-import { type KrakoanInfo, type KrakoanInfoNullable, type KrakoanProgram } from "../schema/krakoa.schema.js";
+import { type KrakoanInfo, type KrakoanProgram } from "../schema/krakoa.schema.js";
 import Inheritance from "./opcodes/Inheritance.js";
 import Speech from "./opcodes/Speech.js";
 import Trigger from "./opcodes/Trigger.js";
@@ -32,12 +32,13 @@ export type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Pro
 export class KrakoanRunner {
   public Registers: ContextType = {};
   public DataStack: ContextStackType = [];
+  public ReturnStack: number[] = []; // Unified stack for non-linear flow control
   public Symbols: Record<string, any> = {}; // Global symbol storage for absorption
   
   /**
    * Mapping of functional tokens (emojis) to their execution logic.
    */
-  public InstructionMap: Record<InstructionOpcode, ExecutionHandler> = {
+  public CommandTable: Record<InstructionOpcode, ExecutionHandler> = {
     "➔": Trigger,
     "🔗": Inheritance,
     "💬": Speech,
@@ -67,6 +68,13 @@ export class KrakoanRunner {
   }
 
   /**
+   * Registers a custom command handler (Plugin support).
+   */
+  public registerPlugin(opcode: InstructionOpcode, handler: ExecutionHandler): void {
+    this.CommandTable[opcode] = handler;
+  }
+
+  /**
    * Executes a single instruction at the current Instruction Pointer.
    * Handles decoding of pooled values and updates the IP.
    * 
@@ -79,18 +87,23 @@ export class KrakoanRunner {
     if (!__raw) return false;
 
     // Decode numerical indices back into their text/object values before execution
-    __raw.instruction = await this.decode(__raw.instruction);
+    // We decode a CLONE so we don't pollute the original IR code
+    const decodedInstruction = await this.decode(__raw.instruction);
     
-    if (!await this.execute(__raw)) {
-      console.error(`❌ Instruction Error for ${__raw.address}`);
-    }
+    const node: KrakoanInfo = {
+      address: __raw.address,
+      next: __raw.next,
+      instruction: decodedInstruction
+    };
+
+    const isExecuted = await this.execute(node);
     
-    const lastInstruction = Object.keys(this.Program?.code).length;
-    
-    // Auto-increment IP if it wasn't modified by the instruction handler (e.g., by a Jump)
-    if (this.Registers["IP"] === __raw.address) {
-      if (__raw.next < lastInstruction) {
-        this.Registers["IP"] = __raw.next;
+    // Auto-increment IP ONLY if:
+    // 1. The command returned true (success)
+    // 2. The command DID NOT manually change the IP (e.g. it was not a Jump/Return)
+    if (isExecuted && this.Registers["IP"] === node.address) {
+      if (node.next !== -1) {
+        this.Registers["IP"] = node.next;
       } else {
         this.Registers["Status"] = 'HALTED';
       }
@@ -101,7 +114,6 @@ export class KrakoanRunner {
 
   /**
    * Dispatches the instruction to its corresponding opcode handler.
-   * Also handles implicit returns for Trigger-based scopes.
    * 
    * @param node - The current execution frame info.
    * @returns True if execution succeeded.
@@ -109,26 +121,11 @@ export class KrakoanRunner {
   private async execute(node: KrakoanInfo) : Promise<boolean> {
     const { type } = node.instruction;
     if (type !== undefined) {
-      const callback = this.InstructionMap[type];
-      const result = callback ? await callback(node, this) : true;
-  
-      if (result) {
-        const currentBSP = this.Registers.BSP;
-        const parentContext = this.DataStack[currentBSP];
-    
-        // Logic for "Implicit Return": If a child instruction finishes and no further 
-        // instructions are executing in its branch, return IP to the parent Trigger.
-        const isValidTrigger = node 
-          && parentContext
-          && parentContext.__trigger 
-          && parentContext.__retAddress === (node.address - 1);
-  
-        if (isValidTrigger && !parentContext.__isExecuting) {
-          this.Registers.IP = parentContext.__retAddress;
-        }
-  
-        return true;
+      const command = this.CommandTable[type];
+      if (command) {
+        return await command(node, this);
       }
+      return true; // Unknown commands are treated as NO-OP
     }
 
     return false;
@@ -137,16 +134,15 @@ export class KrakoanRunner {
   /**
    * Fetches the raw instruction from the program code at the current IP.
    */
-  private fetch() : KrakoanInfoNullable {
-    if (this.Program === null || this.Program === undefined) return null;
+  private fetch() : any {
+    if (!this.Program) return null;
     const __currIP = this.Registers["IP"] as number;
     const currInstruction = this.Program.code[__currIP];
     if (currInstruction !== undefined) {
-      const __nextIP = currInstruction.next[0] ?? -1;
       return {
-        next   : __nextIP,
+        next   : currInstruction.next[0] ?? -1,
         address: __currIP,
-        instruction: currInstruction,
+        instruction: { ...currInstruction }, // Shallow clone of instruction to prevent pollution
       }
     }
 
@@ -158,10 +154,15 @@ export class KrakoanRunner {
    * using the program's text pool.
    * 
    * @param value - The value to decode (can be recursive).
+   * @param keyName - Optional key name to help skip pooling for instruction types.
    * @returns The decoded value.
    */
-  public decode(value: any): any {
+  public decode(value: any, keyName?: string): any {
     if (value === null || value === undefined || !this.Program) return;
+
+    // Skip decoding for the instruction type to keep literal emojis
+    if (keyName === 'type' && typeof value === 'string') return value;
+
     if (typeof value === 'number') return this.Program.text[value];
     if (Array.isArray(value)) return value.map(item => this.decode(item));
     if (typeof value === 'object') {
@@ -170,7 +171,7 @@ export class KrakoanRunner {
       const newObject: Record<string, any> = {};
       for (let key in value) {
         newObject[key] = (key !== "address" && key !== "next" && key !== "original" && key !== "target") 
-          ? this.decode(value[key])
+          ? this.decode(value[key], key)
           : value[key];
       }
       return newObject;
@@ -183,12 +184,16 @@ export class KrakoanRunner {
    * Sets the IP to the program's entry point and clears the stack.
    */
   public reset() {
-    if (this.Program === null || this.Program === undefined) return;
+    if (!this.Program) return;
     this.DataStack = [{}]; // Global context at index 0
+    this.ReturnStack = []; // Reset Return Stack
     this.Symbols = {}; // Reset global symbol storage
-    this.Registers['IP'] = this.Program.entry;
-    this.Registers['Status'] = 'RUNNING';
-    this.Registers['ESP'] = 0;
-    this.Registers['BSP'] = 0;
+    
+    // Assign individually to preserve the Registers object reference
+    this.Registers.IP = this.Program.entry;
+    this.Registers.Status = 'RUNNING';
+    this.Registers.ESP = 0;
+    this.Registers.BSP = 0;
+    this.Registers.CSP = 0;
   }
 }
