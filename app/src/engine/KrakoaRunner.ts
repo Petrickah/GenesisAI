@@ -137,12 +137,12 @@ export class KrakoanRunner {
   private fetch() : any {
     if (!this.Program) return null;
     const __currIP = this.Registers["IP"] as number;
-    const currInstruction = this.Program.code[__currIP];
-    if (currInstruction !== undefined) {
+    const safeCopy = JSON.parse(JSON.stringify(this.Program.code[__currIP]));
+    if (safeCopy !== undefined) {
       return {
-        next   : currInstruction.next[0] ?? -1,
+        next   : safeCopy.next[0] ?? -1,
         address: __currIP,
-        instruction: { ...currInstruction }, // Shallow clone of instruction to prevent pollution
+        instruction: safeCopy,
       }
     }
 
