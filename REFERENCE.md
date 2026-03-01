@@ -97,3 +97,47 @@ To align the current codebase with this reference, the following refinements are
 
 - [ ] **Smart Merge:** Update the exit phase to check `__isStructural`. If true, nest the frame under its ID; if false, flatten its contents into the parent.
 - [ ] **Root Protection:** Ensure the Global Context (Frame 0) remains a flat key-value store for accessibility while still supporting nested children.
+
+---
+
+## 👻 Ghost Instructions (Compiler Sentinels)
+
+To avoid "Magic Logic" in the VM and ensure **Semantical Determinism**, the compiler can emit "Ghost Instructions" (Sentinels) that handle scope management and return logic explicitly. This transforms implicit VM behavior into explicit, programmable IR.
+
+### 🏁 Internal Opcodes
+
+- **`EXIT_SCOPE` (NEST/FLATTEN):**
+  - **Purpose:** Automatically appended by the compiler at the end of every `{ ... }` block.
+  - **Logic:** Decides between **Hierarchical Nesting** (for Structural Containers) and **Flattening** (for Logic Tokens) based on a `nest: boolean` flag in the instruction params.
+  - **Execution:**
+      1. **Merge:** Nest the frame under its ID if `nest` is true; otherwise, flatten (Object.assign) into the parent.
+      2. **Pop Frame:** Remove current frame from `DataStack`.
+      3. **Flow Control:** If `ReturnStack` is not empty, `IP = ReturnStack.pop()`. Otherwise, `IP = Trigger.__retAddress`.
+      4. **Sync Registers:** Update `ESP`, `BSP`, and `CSP` to reflect the new top frame.
+
+- **`SUBROUTINE_RETURN`:**
+  - Same logic as `EXIT_SCOPE`, but used for explicit user-defined returns (`🔗` mode: "Return"). It essentially acts as a manual trigger for the sentinel logic.
+
+### 🏗️ Runtime: The Return Stack
+
+A dedicated `ReturnStack` in the `KrakoaRunner` manages **Non-Linear Flow** (Jumps/Calls).
+
+1. **Normal Flow:** Instructions proceed via `next[0]`. No stack interaction is needed.
+2. **The Jump (`🔗`):** When jumping to a tag/subroutine, the VM **pushes** the *next address* (where execution should resume after the subroutine) onto the `ReturnStack`.
+3. **The Return (`🏁`):** The Ghost instruction at the end of the target code **pops** from the `ReturnStack` to find its way back.
+
+### 🗑️ Obsolete Metadata (Flags to Remove)
+
+With the introduction of the `ReturnStack` and `Ghost Instructions`, the following can be deprecated:
+
+- **`__retAddress` (in frames):** Only Triggers need to store a "fail-safe" exit address. All dynamic returns are handled by the `ReturnStack`.
+- **`__isExecuting`:** No longer needed as the IP and ReturnStack manage the active path.
+- **`Implicit Return Guessing`:** The VM no longer needs to check instruction indices to guess when a scope ends.
+
+### 🛠️ Ghost Instruction TODO List
+
+- [ ] **Compiler Epilogues:** Update `KrakoaCompiler.ts` to push an internal "Exit" node (type `🏁`) after processing a node's body.
+- [ ] **Instruction Params:** Ensure the `🏁` instruction has a `nest` parameter (`true` for `👤/🧠`, `false` for `🧬`).
+- [ ] **Return Stack:** Implement `ReturnStack: number[] = []` in `KrakoaRunner.ts`.
+- [ ] **The Jump Logic:** Update `Inheritance.ts` to push the next address to the `ReturnStack` before setting the `IP`.
+- [ ] **The Ghost Handler:** Implement the unified opcode handler for `🏁` (Merge -> Pop -> Return -> Sync).
