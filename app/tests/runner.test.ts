@@ -1,8 +1,7 @@
 import test, { beforeEach, it } from "node:test";
-import { k } from "../src/engine/KrakoaCompiler.js";
+import assert from "node:assert";
 import krakoa from "../src/engine/KrakoaEngine.js";
 import { KrakoanRunner } from "../src/engine/KrakoaRunner.js";
-import assert from "node:assert";
 import type { KrakoanProgram } from "../src/schema/krakoa.schema.js";
 
 test("Testing the runner", async () => {
@@ -10,20 +9,7 @@ test("Testing the runner", async () => {
   let runner: KrakoanRunner;
 
   beforeEach(async () => {
-    program = await krakoa(k/*ts*/`
-      🧠("NEX-LIB_MSG", name: "System Lexicon") {
-        📌("Greeting", value: "Hello World!");
-      };
-      ➔ 👤("NEX-AGT_HELLO") {
-        ➔ 🔗("IMPORT_MSG", mode: "Inheritance") 🔑 [
-          @"NEX-LIB_MSG"
-        ];
-        ➔ 💬("Announce", to: "Architect") {
-          📂("Message", content: λ(ctx["Greeting"]));
-        };
-      };
-    `);
-
+    program = await krakoa('src/programs/HelloWorld.ksl');
     runner = new KrakoanRunner(program);
   });
 
