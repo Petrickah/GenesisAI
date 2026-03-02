@@ -26,6 +26,7 @@ The Krakoa Nexus DSL operates as a **Semantic Command Orchestrator**. Every toke
 - **The Sentinel (`🏁`):** An internal opcode automatically inserted by the compiler at the end of every body `{ ... }`.
 - **Smart Merging:** The Sentinel is the **sole authority** for scope exit. It performs **Hierarchical Nesting** for structural containers and **Flattening** for logic blocks.
 - **Cycle Control:** For Triggers, the Sentinel increments cycle counts and sets `IP = bodyAddr` until cycles are exhausted.
+- **Non-Trigger Sentinels:** A sentinel for a non-trigger block (like `🧠` or `📑`) is a NO-OP. It does not halt execution but simply allows the runner to proceed to the next instruction.
 
 ### 4. Deterministic Flow Control (The Silent Step)
 
@@ -81,3 +82,11 @@ The Krakoa Nexus DSL operates as a **Semantic Command Orchestrator**. Every toke
 
 - [ ] **Integration Test:** Verify a multi-cycle triggered entity (`👤` + `➔` + `🔗`) produces a clean, non-redundant JSON result.
 - [ ] **Final Cleanup:** Remove all deprecated flags (`__retAddress` inside frames, `__isExecuting`, etc.).
+
+---
+
+## 🔬 Part 3: Current Status & Next Steps
+
+The core VM stability and compiler intelligence are largely complete. The primary remaining test failure (`loop.test.ts`) is expected and serves as a driver for the next phase of development.
+
+- **`loop.test.ts` Failure:** This test fails because the structural (`🧠`) and state (`📌`) opcodes are not yet implemented. The runner executes them as NO-OPs, so the `Counter` variable in the test program is never initialized or incremented. The test's failure (`expected: 3, actual: undefined`) correctly confirms that this logic is the next to be implemented as part of Phase 3.

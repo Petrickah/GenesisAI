@@ -61,8 +61,8 @@ async function handleLink(node: KrakoanInfo, runner: KrakoanRunner): Promise<boo
 async function handleSentinel(node: KrakoanInfo, runner: KrakoanRunner): Promise<boolean> {
   const currentContext = runner.DataStack[runner.Registers.BSP];
   if (!currentContext || !Array.isArray(currentContext.__activeTriggers) || currentContext.__activeTriggers.length === 0) {
-    console.warn("Sentinel encountered without an active trigger context. ", runner.DataStack);
-    return false; // Sentinel without an active trigger
+    // console.warn("Sentinel encountered without an active trigger context. ", runner.DataStack);
+    return true; // Sentinel without an active trigger should be a NO-OP and not fail execution
   }
 
   const activeTriggerIndex = currentContext.__activeTriggers.length - 1;
