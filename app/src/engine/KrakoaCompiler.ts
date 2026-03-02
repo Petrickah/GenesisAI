@@ -5,7 +5,7 @@
  * Implements "Semantical Determinism" by anchoring LLM context into structured graphs.
  */
 
-import { KrakoanNodeSchema, KrakoanProgramSchema, KrakoanTagsSchema, type KrakoanInstruction, type KrakoanNode, type KrakoanProgram } from '../schema/krakoa.schema.js';
+import { KrakoanLambdaSchema, KrakoanNodeSchema, KrakoanProgramSchema, KrakoanTagsSchema, type KrakoanInstruction, type KrakoanNode, type KrakoanProgram } from '../schema/krakoa.schema.js';
 import parser from '../grammar/grammar.cjs';
 
 /**
@@ -57,7 +57,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
      * Skips Lambda objects to preserve executable code.
      */
     function process(value: any): any {
-      if (!value) return undefined;
+      if (value === undefined || value === null) return undefined;
       if (Array.isArray(value)) return value.map(process);
       if (typeof value === 'string') {
         let index = textPool.indexOf(value);
@@ -68,11 +68,14 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         return index;
       }
       if (typeof value === 'object') {
-        if (value.type === ":lambda") return value;
+        if (value.type === ':lambda' 
+          || value.kind === 'hashtag'
+          || value.kind === 'reference'
+          || value.kind === 'state') return value;
         
         const newObject: any = {};
         for (let k in value) {
-          newObject[k] = (k !== 'address' && k !== 'original' && k !== 'target' && k !== 'kind') ? process(value[k]) : value[k];
+          newObject[k] = (k !== 'type') ? process(value[k]) : value[k];
         }
         return newObject;
       }
@@ -83,7 +86,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
      * Scans instructions for hashtags to populate the global symbol map.
      */
     function scanForHashTags(value: any, index: number): void {
-      if (!value || typeof value !== 'object') return;
+      if (value === undefined || value === null || typeof value !== 'object') return;
       if (Array.isArray(value)) {
         value.forEach((v) => scanForHashTags(v, index));
         return;
@@ -100,7 +103,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
      * Resolves symbolic paths into absolute instruction addresses using the symbol map.
      */
     function solveReference(value: any): any {
-      if (!value) return undefined;
+      if (value === undefined || value === null) return undefined;
       if (Array.isArray(value)) return value.map(solveReference);
       if (typeof value === 'object' && value.kind === 'hashtag') {
         let lastAddress = -1;
@@ -215,23 +218,19 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
   /**
    * Core linearization loop.
    * Flattens nested AST nodes into a flat instruction list with jump pointers for branching.
+   * 
+   * Now implements Sentinel (🏁) insertion at the end of every block.
    */
-  function process(bodyNodes: Record<string, any>[], returnIndex?: number): void {
+  function linearize(bodyNodes: Record<string, any>[], exitIndex?: number): void {
     bodyNodes.forEach((activeNode, index) => {
       const currentIndex = instructions.length;
-      const isLastInstruction = index === bodyNodes.length - 1;
+      const isLastNode = index === bodyNodes.length - 1;
 
-      let defaultNext: number = isLastInstruction ? (returnIndex ?? -1) : currentIndex + 1;
-
-      if (activeNode.type === '➔' && !returnIndex && firstTriggerIndex === -1) {
-        firstTriggerIndex = currentIndex;
-      }
-
-      const currInstruction = {
+      const currInstruction: KrakoanInstruction = {
         id: activeNode.params.id,
         type: activeNode.type,
         timestamp: Date.now(),
-        params: activeNode.params,
+        params: { ...activeNode.params },
         tags: activeNode.tags?.map((tag: any) => {
           if (tag.kind === 'reference') {
             const isValid = verifyReference(tag.segments, fullAST); 
@@ -241,43 +240,96 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
           }
           return tag;
         }),
-        next: [defaultNext]
+        next: []
+      };
+
+      if (activeNode.type === '➔' && exitIndex === undefined && firstTriggerIndex === -1) {
+        firstTriggerIndex = currentIndex;
       }
 
       instructions.push(currInstruction);
 
-      if (activeNode.body && activeNode.body.length > 0) {
-        const bodyStartIndex = instructions.length;
+      let sentinelAddr: number | undefined;
+      let bodyStart: number | undefined;
 
-        if (activeNode.type === '➔') {
-          process(activeNode.body, currentIndex); 
-          const exitIndex = instructions.length;
-          currInstruction.next = [bodyStartIndex, exitIndex];
-        } 
-        else {
-          process(activeNode.body, defaultNext);
-          
-          if (activeNode.type === '⚓') {
-            const exitIndex = instructions.length;
-            currInstruction.next = [bodyStartIndex, exitIndex];
-          } else {
-            currInstruction.next = [bodyStartIndex];
+      if (activeNode.body && activeNode.body.length > 0) {
+        bodyStart = instructions.length;
+        const sentinelPlaceholder = -1;
+        
+        linearize(activeNode.body, sentinelPlaceholder);
+        
+        sentinelAddr = instructions.length;
+        // Patch body instructions that pointed to the placeholder to point to the sentinel
+        for (let j = bodyStart; j < sentinelAddr; j++) {
+          const bodyInstruction = instructions[j];
+          if (bodyInstruction && bodyInstruction.next.includes(sentinelPlaceholder)) {
+            bodyInstruction.next = bodyInstruction.next.map(n => sentinelAddr !== undefined && n === sentinelPlaceholder ? sentinelAddr : n);
           }
         }
-      } else {
-        currInstruction.next = [defaultNext];
+
+        const isTrigger = activeNode.type === '➔';
+        const isStructural = ['👤', '🧠', '📦', '📑'].includes(activeNode.type);
+        const sentinelParams: Record<string, any> = { nest: isStructural };
+        if (isTrigger && bodyStart !== undefined) sentinelParams.bodyAddr = bodyStart;
+
+        instructions.push({
+          id: `@sentinel:${currentIndex}`,
+          type: '🏁',
+          timestamp: Date.now(),
+          params: sentinelParams,
+          next: [] // Will be patched below
+        });
+      } else if (activeNode.type === '➔') {
+        sentinelAddr = instructions.length;
+        instructions.push({
+          id: `@sentinel:${currentIndex}`,
+          type: '🏁',
+          timestamp: Date.now(),
+          params: { nest: false, bodyAddr: currentIndex }, // Trigger with no block still points back to itself or should it point back? User said: "one that points back to the trigger"
+          next: [] // Will be patched below
+        });
       }
 
-      if (isLastInstruction) {
-        defaultNext = instructions.length;
-        if (!activeNode.body || activeNode.body.length === 0) {
-          currInstruction.next = [instructions.length];
+      // Determine where the next instruction/sibling should be.
+      // If last node, go to parent's exitIndex. If top-level, use program end.
+      const afterSubtreeAddr = isLastNode ? (exitIndex ?? instructions.length) : instructions.length;
+
+      // Patch the Sentinel's next addresses
+      if (sentinelAddr !== undefined) {
+        const sentinel = instructions[sentinelAddr];
+        if (sentinel !== undefined) {
+          if (activeNode.type === '➔') {
+            sentinel.next = [currentIndex, afterSubtreeAddr];
+          } else {
+            sentinel.next = [afterSubtreeAddr];
+          }
+        }
+      }
+
+      // Patch the current instruction's next addresses
+      if (activeNode.body && activeNode.body.length > 0) {
+        if (activeNode.type === '➔') {
+          // Trigger with block: [bodyStart, exitAddr, sentinelAddr]
+          currInstruction.next = [bodyStart!, afterSubtreeAddr, sentinelAddr!];
+        } else if (activeNode.type === '⚓') {
+          currInstruction.next = [bodyStart!, afterSubtreeAddr];
+        } else {
+          // Normal container: [bodyStart]
+          currInstruction.next = [bodyStart!];
+        }
+      } else {
+        if (activeNode.type === '➔') {
+          // Trigger without block: [exitAddr, sentinelAddr]
+          currInstruction.next = [afterSubtreeAddr, sentinelAddr!];
+        } else {
+          // Leaf node: [exitAddr]
+          currInstruction.next = [afterSubtreeAddr];
         }
       }
     });
   }
 
-  process(fullAST);
+  linearize(fullAST);
 
   return link(KrakoanProgramSchema.parse({
     code: { ...instructions },

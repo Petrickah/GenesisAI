@@ -43,17 +43,17 @@ The Krakoa Nexus DSL operates as a **Semantic Command Orchestrator**. Every toke
 
 ### Phase 1: Compiler Intelligence
 
-- [ ] **Literal Types:** Update `process()` in `KrakoaCompiler.ts` to skip string-pooling for the `type` key.
-- [ ] **Sentinel Insertion:** Append a `🏁` instruction at the end of every block body.
-- [ ] **Sentinel Metadata:** Include `params.nest` (boolean) and `params.bodyAddr` (number, for triggers only).
-- [ ] **Next Linkage:** Ensure the sentinel's `next` points to the address of the next instruction after the block.
+- [x] **Literal Types:** Update `process()` in `KrakoaCompiler.ts` to skip string-pooling for the `type` key.
+- [x] **Sentinel Insertion:** Append a `🏁` instruction at the end of every block body.
+- [x] **Sentinel Metadata:** Include `params.nest` (boolean) and `params.bodyAddr` (number, for triggers only).
+- [x] **Next Linkage:** Ensure the sentinel's `next` points to the address of the next instruction after the block.
 
 ### Phase 2: VM Stability
 
-- [ ] **Cloned Fetch:** Refactor `runner.fetch()` to return `{ ...currInstruction }`.
-- [ ] **Selective Decode:** Update `runner.decode()` to return literal strings if the key name is `type`.
-- [ ] **Silent Step:** Update `runner.step()` to prevent auto-increment if `IP` was manually changed or if `execute()` returned `false`.
-- [ ] **Reset Fix:** Assign properties to `this.Registers` individually to preserve the object reference.
+- [x] **Cloned Fetch:** Refactor `runner.fetch()` to return `{ ...currInstruction }`.
+- [x] **Selective Decode:** Update `runner.decode()` to return literal strings if the key name is `type`.
+- [x] **Silent Step:** Update `runner.step()` to prevent auto-increment if `IP` was manually changed or if `execute()` returned `false`.
+- [x] **Reset Fix:** Assign properties to `this.Registers` individually to preserve the object reference.
 
 ### Phase 3: Stateless Opcodes
 
