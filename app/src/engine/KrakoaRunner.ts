@@ -99,7 +99,7 @@ export class KrakoanRunner {
       this.Registers.Status = 'HALTED';
     }
 
-    return true;
+    return isExecuted;
   }
 
   /**
@@ -175,7 +175,7 @@ export class KrakoanRunner {
    */
   public reset() {
     if (!this.Program) return;
-    this.DataStack = [{}]; // Global context at index 0
+    this.DataStack = [{ __activeTriggers: [] }]; // Global context at index 0
     this.ReturnStack = []; // Reset Return Stack
     this.Symbols = {}; // Reset global symbol storage
     

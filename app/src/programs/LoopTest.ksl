@@ -1,0 +1,13 @@
+import { k } from '../engine/KrakoaCompiler.js';
+
+export default k/*ts*/`
+🧠("LOOP_CONCEPT", name: "Loop Test") {
+  📌("Counter", value: 0);
+};
+
+➔ ("LOOP_TRIGGER", __maxCycles: 3) {
+  🧠("LOOP_CONCEPT") {
+    📌("Counter", value: λ(ctx.Counter + 1));
+  };
+};
+`;

@@ -83,7 +83,7 @@ export const KrakoanProgramSchema = z.object({
   symbols: z.record(z.string(), z.number()).default({}),
   text: z.array(z.string()).default([]),
   code: z.record(z.coerce.number(), KrakoanInstructionSchema),
-}).strict().nullable().optional();
+}).strict();
 
 /**
  * Execution Frame Info

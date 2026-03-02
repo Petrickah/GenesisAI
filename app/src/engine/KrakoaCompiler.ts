@@ -75,7 +75,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         
         const newObject: any = {};
         for (let k in value) {
-          newObject[k] = (k !== 'type') ? process(value[k]) : value[k];
+          newObject[k] = (k !== 'type' && k !== 'id') ? process(value[k]) : value[k];
         }
         return newObject;
       }
@@ -292,7 +292,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
       // Determine where the next instruction/sibling should be.
       // If last node, go to parent's exitIndex. If top-level, use program end.
-      const afterSubtreeAddr = isLastNode ? (exitIndex ?? instructions.length) : instructions.length;
+      const afterSubtreeAddr = isLastNode ? (exitIndex ?? (sentinelAddr !== undefined ? sentinelAddr + 1 : instructions.length)) : (sentinelAddr !== undefined ? sentinelAddr + 1 : instructions.length);
 
       // Patch the Sentinel's next addresses
       if (sentinelAddr !== undefined) {

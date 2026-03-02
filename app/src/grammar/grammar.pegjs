@@ -98,8 +98,11 @@ ParameterList
     return params;
   }
 
+NumberLiteral
+  = $([0-9]+ ("." [0-9]+)?) { return parseFloat(text()); }
+
 Parameter
-  = _ label:Identifier ":" value:(Identifier / LambdaExpression) {
+  = _ label:Identifier ":" _ value:(NumberLiteral / Identifier / LambdaExpression) {
     return { [label]: value }
   }
 

@@ -5,7 +5,7 @@ import { KrakoanRunner } from "../src/engine/KrakoaRunner.js";
 import type { KrakoanProgram } from "../src/schema/krakoa.schema.js";
 
 test("Testing the runner", async () => {
-  let program: KrakoanProgram = null;
+  let program: KrakoanProgram;
   let runner: KrakoanRunner;
 
   beforeEach(async () => {

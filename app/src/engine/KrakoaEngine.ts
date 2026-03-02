@@ -23,7 +23,7 @@ export default async function krakoa(input: string | KrakoanProgram, isPath: boo
 
     if (isPath && typeof input === 'string') {
       const fileName = path.basename(input);
-      if (!fileName.endsWith('.ksl')) return null;
+      if (!fileName.endsWith('.ksl')) throw new Error(`Input file "${input}" must be a .ksl file.`);
 
       // Bundle and transpile the .ksl (TypeScript-based) into standard ESM
       const result = await esbuild.build({
@@ -53,9 +53,10 @@ export default async function krakoa(input: string | KrakoanProgram, isPath: boo
   } catch(error: any) {
     if (error instanceof z.ZodError) {
       console.error(`⚠️ Schema mismatch: ${z.treeifyError(error)}`);
+      throw new Error(`Schema validation failed: ${z.treeifyError(error)}`);
     } else {
       console.error(`⚠️ System error: ${input}:${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
+      throw error; // Re-throw the original error
     }
-    return null;
   }
 }
