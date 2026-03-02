@@ -299,7 +299,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         const sentinel = instructions[sentinelAddr];
         if (sentinel !== undefined) {
           if (activeNode.type === '➔') {
-            sentinel.next = [currentIndex, afterSubtreeAddr];
+            sentinel.next = [afterSubtreeAddr, currentIndex];
           } else {
             sentinel.next = [afterSubtreeAddr];
           }

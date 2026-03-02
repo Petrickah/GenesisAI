@@ -17,11 +17,11 @@ import { KrakoanProgramSchema, type KrakoanProgram } from '../schema/krakoa.sche
  * @param isPath - Whether the input should be treated as a file path.
  * @returns A promise resolving to a KrakoanProgram or null if validation fails.
  */
-export default async function krakoa(input: string, isPath: boolean = true) : Promise<KrakoanProgram> {
+export default async function krakoa(input: string | KrakoanProgram, isPath: boolean = true) : Promise<KrakoanProgram> {
   try {
-    let rawSourceCode: string = input;
+    let rawSourceCode: string | KrakoanProgram = input;
 
-    if (isPath) {
+    if (isPath && typeof input === 'string') {
       const fileName = path.basename(input);
       if (!fileName.endsWith('.ksl')) return null;
 
@@ -36,17 +36,20 @@ export default async function krakoa(input: string, isPath: boolean = true) : Pr
       });
 
       rawSourceCode = result.outputFiles[0]?.text || '';
+
+      if (!rawSourceCode) {
+        throw new Error("The .ksl file must have an export default k`...` or provided source is empty.");
+      }
+  
+      // Dynamic import via base64 data URI to load the transpiled module into memory
+      const rawModule = await import(`data:text/javascript;base64,${Buffer.from(rawSourceCode).toString('base64')}`);
+      
+      // Validate the module's default export against the KrakoanProgram schema
+      return KrakoanProgramSchema.parse(rawModule.default);
     }
 
-    if (!rawSourceCode) {
-      throw new Error("The .ksl file must have an export default k`...` or provided source is empty.");
-    }
-
-    // Dynamic import via base64 data URI to load the transpiled module into memory
-    const rawModule = await import(`data:text/javascript;base64,${Buffer.from(rawSourceCode).toString('base64')}`);
+    return KrakoanProgramSchema.parse(rawSourceCode);
     
-    // Validate the module's default export against the KrakoanProgram schema
-    return KrakoanProgramSchema.parse(rawModule.default);
   } catch(error: any) {
     if (error instanceof z.ZodError) {
       console.error(`⚠️ Schema mismatch: ${z.treeifyError(error)}`);

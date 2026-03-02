@@ -6,10 +6,7 @@
  */
 
 import { type KrakoanInfo, type KrakoanProgram } from "../schema/krakoa.schema.js";
-import Inheritance from "./opcodes/Inheritance.js";
-import Speech from "./opcodes/Speech.js";
-import Trigger from "./opcodes/Trigger.js";
-import Contextual from "./opcodes/Contextual.js";
+import ExecutionFlow from "./opcodes/ExecutionFlow.js";
 
 export type InstructionOpcode = string | number;
 export type ContextType = Record<string, any>;
@@ -28,6 +25,7 @@ export type ExecutionHandler = (node: KrakoanInfo, runner: KrakoanRunner) => Pro
  * - Status: Current VM status (RUNNING, HALTED, etc.)
  * - ESP: Stack Pointer (top of the context stack)
  * - BSP: Base Stack Pointer (locked to the current Trigger frame)
+ * - CSP: Context Stack Pointer (points to the start of current Context frame)
  */
 export class KrakoanRunner {
   public Registers: ContextType = {};
@@ -39,24 +37,11 @@ export class KrakoanRunner {
    * Mapping of functional tokens (emojis) to their execution logic.
    */
   public CommandTable: Record<InstructionOpcode, ExecutionHandler> = {
-    "➔": Trigger,
-    "🔗": Inheritance,
-    "💬": Speech,
-    "📡": Speech,
-    "👤": Contextual,
-    "🧠": Contextual,
-    "🧬": Contextual,
-    "📌": Contextual,
-    "📂": Contextual,
-    "🧩": Contextual,
-    "📑": Contextual,
-    "🔓": Contextual,
-    "🩺": Contextual,
-    "💉": Contextual,
-    "🛡️": Contextual,
-    "🚀": Contextual,
-    "🎭": Contextual,
-    "📦": Contextual,
+    '➔': ExecutionFlow,
+    '⚓': ExecutionFlow,
+    '🔃': ExecutionFlow,
+    '🔗': ExecutionFlow,
+    '🏁': ExecutionFlow
   }
 
   /**
@@ -101,12 +86,17 @@ export class KrakoanRunner {
     // Auto-increment IP ONLY if:
     // 1. The command returned true (success)
     // 2. The command DID NOT manually change the IP (e.g. it was not a Jump/Return)
-    if (isExecuted && this.Registers["IP"] === node.address) {
+    const lastInstruction = Object.keys(this.Program.code).length;
+    if (isExecuted && this.Registers.IP === node.address) {
       if (node.next !== -1) {
-        this.Registers["IP"] = node.next;
+        this.Registers.IP = node.next;
       } else {
-        this.Registers["Status"] = 'HALTED';
+        this.Registers.Status = 'HALTED';
       }
+    }
+
+    if (this.Registers.IP === lastInstruction) {
+      this.Registers.Status = 'HALTED';
     }
 
     return true;
@@ -136,7 +126,7 @@ export class KrakoanRunner {
    */
   private fetch() : any {
     if (!this.Program) return null;
-    const __currIP = this.Registers["IP"] as number;
+    const __currIP = this.Registers.IP as number;
     const safeCopy = JSON.parse(JSON.stringify(this.Program.code[__currIP]));
     if (safeCopy !== undefined) {
       return {
@@ -170,7 +160,7 @@ export class KrakoanRunner {
       
       const newObject: Record<string, any> = {};
       for (let key in value) {
-        newObject[key] = (key !== "address" && key !== "next" && key !== "original" && key !== "target") 
+        newObject[key] = (key !== "address" && key !== "next" && key !== "original" && key !== "target" && key !== 'bodyAddr') 
           ? this.decode(value[key], key)
           : value[key];
       }
