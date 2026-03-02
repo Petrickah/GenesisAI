@@ -7,11 +7,9 @@ async function handleTrigger(node: KrakoanInfo, runner: KrakoanRunner): Promise<
     return false; // Cannot process trigger without a valid program
   }
 
-  const nextInstructionAddress = node.next;
+  const nextInstructionAddress = node.next as number; // Take the first jump path
   const nextInstructionRaw = runner.Program.code[nextInstructionAddress];
-  const nextInstruction = runner.decode(nextInstructionRaw);
-
-  const isPersistent = nextInstruction && nextInstruction.type === '👤';
+  const isPersistent = nextInstructionRaw && nextInstructionRaw.type === '👤';
 
   const triggerInfo = {
     id: node.instruction.id ?? node.address,
@@ -59,42 +57,49 @@ async function handleLink(node: KrakoanInfo, runner: KrakoanRunner): Promise<boo
 }
 
 async function handleSentinel(node: KrakoanInfo, runner: KrakoanRunner): Promise<boolean> {
-  const currentContext = runner.DataStack[runner.Registers.BSP];
-  if (!currentContext || !Array.isArray(currentContext.__activeTriggers) || currentContext.__activeTriggers.length === 0) {
-    // console.warn("Sentinel encountered without an active trigger context. ", runner.DataStack);
-    return true; // Sentinel without an active trigger should be a NO-OP and not fail execution
+  const params = node.instruction.params || {};
+
+  // Flow control for Triggers
+  if (params.bodyAddr !== undefined) {
+    const currentContext = runner.DataStack[runner.Registers.BSP];
+    if (currentContext && Array.isArray(currentContext.__activeTriggers) && currentContext.__activeTriggers.length > 0) {
+      const activeTriggerIndex = currentContext.__activeTriggers.length - 1;
+      const activeTrigger = currentContext.__activeTriggers[activeTriggerIndex];
+
+      // Increment the counter for the active trigger
+      activeTrigger.minCounter++;
+      const maxCycles = typeof activeTrigger.maxCycles === 'number' ? activeTrigger.maxCycles : parseInt(activeTrigger.maxCycles) || 1;
+
+      if (activeTrigger.minCounter < maxCycles) {
+        // Loop continues: Jump back to the trigger's block body
+        runner.Registers.IP = params.bodyAddr;
+        return true; // Indicate that IP was manually changed
+      } else {
+        // Loop completed: Pop the active trigger and continue execution past the sentinel
+        currentContext.__activeTriggers.pop();
+        return true; // Let the runner advance IP normally
+      }
+    }
   }
 
-  const activeTriggerIndex = currentContext.__activeTriggers.length - 1;
-  const activeTrigger = currentContext.__activeTriggers[activeTriggerIndex];
+  // Nesting logic for structural containers could be handled here
+  // if (params.nest) { ... }
 
-  // Increment the counter for the active trigger
-  activeTrigger.minCounter++;
-  
-  if (activeTrigger.minCounter < activeTrigger.maxCycles) {
-    // Loop continues: Jump back to the trigger's start address
-    runner.Registers.IP = activeTrigger.triggerStart;
-    console.log(`Jumping back to ${JSON.stringify(activeTrigger)}`);
-    return true; // Indicate that IP was manually changed
-  } else {
-    // Loop completed: Pop the active trigger and continue execution past the sentinel
-    currentContext.__activeTriggers.pop();
-    return true; // Let the runner advance IP normally
-  }
+  return true;
 }
 
 export default async (node: KrakoanInfo, runner: KrakoanRunner) => {
   const { type } = node.instruction;
   switch (type) {
-    case '➔': 
+    case '➔':
       return handleTrigger(node, runner);
-    case '⚓': 
+    case '⚓':
       return handleAnchor(node, runner);
-    case '🔃': 
+    case '🔃':
       return handleJump(node, runner);
-    case '🔗': 
+    case '🔗':
       return handleLink(node, runner);
-    case '🏁': 
+    case '🏁':
       return handleSentinel(node, runner);
   }
 

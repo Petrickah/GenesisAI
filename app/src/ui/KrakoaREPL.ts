@@ -223,8 +223,7 @@ export class KrakoaREPL {
       if (!Program) return;
       if (!Program?.code[currAddr]) return;
 
-      const safeCopy = JSON.parse(JSON.stringify(Program.code[currAddr]));
-      const activeInst = await runner.decode(safeCopy) as KrakoanInstruction;
+      const activeInst = await runner.decode(Program.code[currAddr]) as KrakoanInstruction;
       const isCurrent = currAddr === Registers['IP'];
       const pointer = isCurrent ? "  ==>  " : "       ";
       const opcode = activeInst?.type?.toString();

@@ -37,7 +37,6 @@ export default k/*ts*/`
     ⚓ ("Health Check", condition: λ(ctx["Health"] < 50)) {
       🚀("Regenerate Health", power: "Auto");
     };
-    🔗("Healing Factor Done", mode: "Return");
   };
 
   ⚓("Psychological Buffer", condition: λ(ctx["Tags"]["PsychologicalBuffer"])) {
@@ -45,10 +44,8 @@ export default k/*ts*/`
     📡("Meta Awareness", target: "System");
     
     ➔ 💬("Fourth Wall Breach", to: "Architect") {
-      // 🎭 (INTENT): Expresses the emotional or social stance of the speech.
       🎭("Jesting", breakWall: "true");
       📂("Message", content: λ(ctx["Chimichanga Optimized"]));
-      🔗("Speech Done", mode: "Return");
     };
     ➔ 🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT_WADE"::"Psychological Buffer"];
   };

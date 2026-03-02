@@ -19,9 +19,9 @@ import parser from '../grammar/grammar.cjs';
 export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgram | undefined {
   const input = strings.reduce((acc, str, i) => acc + str + (values[i] || ""), "");
   try {
-    const ast = parser.parse(input);  
+    const ast = parser.parse(input);
     return compile(KrakoanNodeSchema.array().parse(ast));
-  } catch(error: any) {
+  } catch (error: any) {
     console.error(`⚠️ System error: ${error.location?.start.line || 0}:${error.location?.start.column || 0}: ${error.message}`);
   }
 }
@@ -68,14 +68,14 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         return index;
       }
       if (typeof value === 'object') {
-        if (value.type === ':lambda' 
+        if (value.type === ':lambda'
           || value.kind === 'hashtag'
           || value.kind === 'reference'
           || value.kind === 'state') return value;
-        
+
         const newObject: any = {};
         for (let k in value) {
-          newObject[k] = (k !== 'type' && k !== 'id') ? process(value[k]) : value[k];
+          newObject[k] = (k !== 'type') ? process(value[k]) : value[k];
         }
         return newObject;
       }
@@ -92,7 +92,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         return;
       }
       if (value.kind === 'hashtag' && value.root) {
-        symbolMap[value.root] = index; 
+        symbolMap[value.root] = index;
       }
       for (const k in value) {
         scanForHashTags(value[k], index);
@@ -197,7 +197,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
     }
     for (let i = 1; i < segments.length; i++) {
       const cleanSegment = segments[i]?.replace(/^[@#]/, '');
-      const isTagOnCurrent = currentScope.tags?.some((t: any) => 
+      const isTagOnCurrent = currentScope.tags?.some((t: any) =>
         t.root?.replace(/^[@#]/, '') === cleanSegment
       );
       if (isTagOnCurrent) continue;
@@ -233,7 +233,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         params: { ...activeNode.params },
         tags: activeNode.tags?.map((tag: any) => {
           if (tag.kind === 'reference') {
-            const isValid = verifyReference(tag.segments, fullAST); 
+            const isValid = verifyReference(tag.segments, fullAST);
             if (!isValid) {
               throw new Error(`Semantic Error: Reference path '@${tag.segments.join('::')}' is unreachable or invalid.`);
             }
@@ -255,9 +255,9 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       if (activeNode.body && activeNode.body.length > 0) {
         bodyStart = instructions.length;
         const sentinelPlaceholder = -1;
-        
+
         linearize(activeNode.body, sentinelPlaceholder);
-        
+
         sentinelAddr = instructions.length;
         // Patch body instructions that pointed to the placeholder to point to the sentinel
         for (let j = bodyStart; j < sentinelAddr; j++) {
@@ -309,8 +309,8 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       // Patch the current instruction's next addresses
       if (activeNode.body && activeNode.body.length > 0) {
         if (activeNode.type === '➔') {
-          // Trigger with block: [bodyStart, exitAddr, sentinelAddr]
-          currInstruction.next = [bodyStart!, afterSubtreeAddr, sentinelAddr!];
+          // Trigger with block
+          currInstruction.next = [bodyStart!];
         } else if (activeNode.type === '⚓') {
           currInstruction.next = [bodyStart!, afterSubtreeAddr];
         } else {
@@ -319,8 +319,8 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         }
       } else {
         if (activeNode.type === '➔') {
-          // Trigger without block: [exitAddr, sentinelAddr]
-          currInstruction.next = [afterSubtreeAddr, sentinelAddr!];
+          // Trigger without block
+          currInstruction.next = [sentinelAddr!];
         } else {
           // Leaf node: [exitAddr]
           currInstruction.next = [afterSubtreeAddr];
