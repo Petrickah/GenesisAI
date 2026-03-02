@@ -37,6 +37,11 @@ The Krakoa Nexus DSL operates as a **Semantic Command Orchestrator**. Every toke
 - **Literal Types:** Instruction `type` (emojis) must **never** be string-pooled. They must remain literal strings/emojis to ensure the `CommandTable` lookup always succeeds.
 - **Proxy Context:** Lambdas (`λ`) use a proxy that searches the `CSP` chain first, then the `BSP`, then Global Symbols.
 
+### 6. Contextual Integrity (The Trigger State)
+
+- **The Lesson:** Transient triggers (`➔` without a persistent `👤` entity) operate on the current context (`BSP`). If a trigger is at the global scope, it decorates the global context (`DataStack[0]`). Sentinels for these triggers also need to check this context. A missing `__activeTriggers` array on the global context causes runtime errors when a sentinel is encountered.
+- **The Fix:** The `KrakoanRunner`'s `reset()` method must initialize the global context with `__activeTriggers: []`. This guarantees that transient triggers and their corresponding sentinels have a stable state array to work with from the start of execution.
+
 ---
 
 ## 🗺️ Part 2: Master Implementation Roadmap
@@ -54,6 +59,7 @@ The Krakoa Nexus DSL operates as a **Semantic Command Orchestrator**. Every toke
 - [x] **Selective Decode:** Update `runner.decode()` to return literal strings if the key name is `type`.
 - [x] **Silent Step:** Update `runner.step()` to prevent auto-increment if `IP` was manually changed or if `execute()` returned `false`.
 - [x] **Reset Fix:** Assign properties to `this.Registers` individually to preserve the object reference.
+- [x] **Global Context:** Initialize `DataStack` with `__activeTriggers: []` in the global context to support transient triggers.
 
 ### Phase 3: Stateless Opcodes
 
