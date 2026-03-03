@@ -328,7 +328,7 @@ function peg$parse(input, options) {
     const isComplex = raw.startsWith(String.fromCharCode(123));
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
-      type: ":lambda",
+      type: "λ",
       code: finalCode,
     };
   }

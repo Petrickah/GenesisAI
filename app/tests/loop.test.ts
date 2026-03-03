@@ -13,7 +13,7 @@ test("Testing the loop functionality", async () => {
     runner = new KrakoanRunner(program);
   });
 
-  it('should run the loop for __maxCycles times', async () => {
+  it('should run the loop for maxCycles times', async () => {
     assert.ok(program, "The program wasn't loaded.");
     assert.equal(runner.Registers.Status, 'RUNNING', "The runner wasn't started");
 

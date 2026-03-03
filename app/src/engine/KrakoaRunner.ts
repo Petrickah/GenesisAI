@@ -6,6 +6,7 @@
  */
 
 import { type KrakoanInfo, type KrakoanProgram } from "../schema/krakoa.schema.js";
+import Contextual from "./opcodes/Contextual.js";
 import ExecutionFlow from "./opcodes/ExecutionFlow.js";
 
 export type InstructionOpcode = string | number;
@@ -32,6 +33,7 @@ export class KrakoanRunner {
   public DataStack: ContextStackType = [];
   public ReturnStack: number[] = []; // Unified stack for non-linear flow control
   public Symbols: Record<string, any> = {}; // Global symbol storage for absorption
+  public PersistentOpcodes: InstructionOpcode[] = [];  // Opcodes that should persist across runs
 
   /**
    * Mapping of functional tokens (emojis) to their execution logic.
@@ -49,14 +51,16 @@ export class KrakoanRunner {
    * @param Program - The KrakoanProgram IR to execute.
    */
   constructor(public Program: KrakoanProgram) {
+    this.registerPlugin('👤', Contextual, true);
     this.reset();
   }
 
   /**
    * Registers a custom command handler (Plugin support).
    */
-  public registerPlugin(opcode: InstructionOpcode, handler: ExecutionHandler): void {
+  public registerPlugin(opcode: InstructionOpcode, handler: ExecutionHandler, isPersistent: boolean = false)  : void {
     this.CommandTable[opcode] = handler;
+    if (isPersistent) this.PersistentOpcodes.push(opcode);
   }
 
   /**
@@ -152,27 +156,30 @@ export class KrakoanRunner {
 
     // We do a deep copy up front to ensure we never mutate the Program's actual IR code
     const safeCopy = JSON.parse(JSON.stringify(initialValue));
+    const ignoreInstructions = ["λ", "📌", "➔", "🏁", "🔃"];
 
     const _decode = (value: any, keyName?: string): any => {
       if (value === null || value === undefined) return;
 
       // Skip decoding for the instruction type to keep literal emojis
       if (keyName === 'type' && typeof value === 'string') return value;
-
       if (typeof value === 'number') return this.Program.text[value];
       if (Array.isArray(value)) return value.map(item => _decode(item));
 
       if (typeof value === 'object') {
-        if (value.type === ":lambda" || value.type === "➔") return value;
+        if (ignoreInstructions.includes(value.type))
+          return value;
 
         const newObject: Record<string, any> = {};
         for (let key in value) {
-          newObject[key] = (key !== "address" && key !== "next" && key !== "original" && key !== "target" && key !== 'bodyAddr')
+          newObject[key] = (key !== "address" && key !== "next")
             ? _decode(value[key], key)
             : value[key];
         }
+
         return newObject;
       }
+      
       return value;
     };
 

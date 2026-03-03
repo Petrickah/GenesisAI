@@ -40,6 +40,8 @@ export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgr
 function compile(fullAST: KrakoanNode[]): KrakoanProgram {
   let firstTriggerIndex = -1;
   let instructions: KrakoanInstruction[] = [];
+  const ignoreInstructions = ["λ", "📌", "➔", "🏁", "🔃"];
+  const ignoreKinds = ["hashtag", "reference", "state"];
   const processedCode: Record<string, KrakoanInstruction> = {};
 
   /**
@@ -68,10 +70,8 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         return index;
       }
       if (typeof value === 'object') {
-        if (value.type === ':lambda'
-          || value.kind === 'hashtag'
-          || value.kind === 'reference'
-          || value.kind === 'state') return value;
+        if (ignoreInstructions.includes(value.type) || ignoreKinds.includes(value.kind))
+          return value;
 
         const newObject: any = {};
         for (let k in value) {

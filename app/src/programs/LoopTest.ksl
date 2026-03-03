@@ -5,9 +5,10 @@ export default k/*ts*/`
   📌("Counter", value: 0);
 };
 
-("LOOP_TRIGGER", __maxCycles: 3) ➔ 👤("TEST_AGENT") {
+➔ 👤("TEST_AGENT") {
   🧠("LOOP_CONCEPT") {
     📌("Counter", value: λ(ctx.Counter + 1));
   };
+  🔃 ("LOOP_AGENT", goto: "TEST_AGENT", maxCycles: 3) 🔑 [@"TEST_AGENT"];
 };
 `;
