@@ -70,7 +70,7 @@ export const KrakoanInstructionSchema = z.object({
   timestamp: z.number().default(() => Date.now()),
   params: z.record(z.string(), KrakoanValueSchema).default({}),
   tags: z.array(KrakoanTagsSchema).optional(),
-  next: z.array(z.number()).min(1),
+  next: z.array(z.number()),
 }).strict();
 
 
@@ -81,7 +81,6 @@ export const KrakoanInstructionSchema = z.object({
 export const KrakoanProgramSchema = z.object({
   entry: z.number().nonnegative(),
   symbols: z.record(z.string(), z.number()).default({}),
-  text: z.array(z.string()).default([]),
   code: z.record(z.coerce.number(), KrakoanInstructionSchema),
 }).strict();
 

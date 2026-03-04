@@ -2,13 +2,14 @@ import { k } from '../engine/KrakoaCompiler.js';
 
 export default k/*ts*/`
 🧠("LOOP_CONCEPT", name: "Loop Test") {
-  📌("Counter", value: 0);
+  📌("Counter", value: -1);
 };
 
 ➔ 👤("TEST_AGENT") {
-  🧠("LOOP_CONCEPT") {
+  ➔ 🔗("LOOP_CONCEPT_INHERIT", mode: "Inheritance") 🔑 [@"LOOP_CONCEPT"];
+  🧠("LOOP_CONCEPT", name: "Loop Test") {
     📌("Counter", value: λ(ctx.Counter + 1));
   };
-  🔃 ("LOOP_AGENT", goto: "TEST_AGENT", maxCycles: 3) 🔑 [@"TEST_AGENT"];
+  ➔ 🔃 ("LOOP_AGENT", goto: "LOOP_CONCEPT", cycles: 3) 🔑 [@"TEST_AGENT"::"LOOP_CONCEPT"];
 };
 `;

@@ -3,9 +3,6 @@ import type { KrakoanRunner } from "../KrakoaRunner.js";
 
 interface TriggerInfo {
   id: string | number;
-  minCycles: number;
-  maxCycles: number;
-  minCounter: number;
   triggerStart: number;
 }
 
@@ -21,9 +18,6 @@ async function handleTrigger(node: KrakoanInfo, runner: KrakoanRunner): Promise<
 
   const triggerInfo: TriggerInfo = {
     id: node.instruction.id ?? node.address,
-    minCycles: (node.instruction.params['__minCycles'] ?? 0) as number,
-    maxCycles: (node.instruction.params['__maxCycles'] ?? 1) as number,
-    minCounter: 0, // Initialize counter for loop management
     triggerStart: node.address, // Store the trigger's starting address
   };
 
@@ -60,7 +54,7 @@ async function handleAnchor(node: KrakoanInfo, runner: KrakoanRunner): Promise<b
 }
 
 async function handleJump(node: KrakoanInfo, runner: KrakoanRunner): Promise<boolean> {
-  const { goto, maxCycles } = node.instruction.params || {};
+  const { goto, maxCycles, cycles } = node.instruction.params || {};
   const tags = node.instruction.tags || [];
 
   if (goto === undefined || goto === null) {
@@ -68,8 +62,10 @@ async function handleJump(node: KrakoanInfo, runner: KrakoanRunner): Promise<boo
     return false; // Critical error, cannot proceed
   }
 
-  if (maxCycles === undefined || maxCycles === null) {
-    console.error(`Jump handling failed: 'maxCycles' parameter is undefined.`);
+  const limit = (maxCycles ?? cycles) as number;
+
+  if (limit === undefined || limit === null) {
+    console.error(`Jump handling failed: 'cycles' or 'maxCycles' parameter is undefined.`);
     return false; // Critical error, cannot proceed
   }
 
@@ -80,27 +76,50 @@ async function handleJump(node: KrakoanInfo, runner: KrakoanRunner): Promise<boo
 
   const { address: targetAddress } = (tags.find((tag) => tag.target === goto) ?? { address: -1 }) as { address: number };
 
-  if (targetAddress !== -1) {    
+  if (targetAddress !== -1) {
     const currentContext = runner.DataStack[runner.Registers.ESP];
-    if (currentContext && Array.isArray(currentContext.__activeTriggers) && currentContext.__activeTriggers.length > 0) {
-      const activeTriggerIndex = currentContext.__activeTriggers.length - 1;
-      const activeTrigger = currentContext.__activeTriggers[activeTriggerIndex];
-      if (activeTrigger.minCounter < maxCycles) {
-        activeTrigger.minCounter++;
-        runner.Registers.IP = targetAddress;
+    if (currentContext) {
+      if (!currentContext.__jumpCounters) {
+        currentContext.__jumpCounters = {};
       }
-      else {
-        currentContext.__activeTriggers.pop();
+
+      const jumpId = node.address;
+      const currentCounter = currentContext.__jumpCounters[jumpId] ?? 0;
+
+      if (currentCounter < limit) {
+        currentContext.__jumpCounters[jumpId] = currentCounter + 1;
+        runner.Registers.IP = targetAddress;
       }
 
       return true;
     }
   }
 
-  return true;  
+  return true;
 }
 
 async function handleLink(node: KrakoanInfo, runner: KrakoanRunner): Promise<boolean> {
+  const { mode } = node.instruction.params || {};
+
+  if (mode === 'Inheritance') {
+    const tags = node.instruction.tags || [];
+    const reference = tags[0]; // Assuming first tag is the target
+
+    if (reference && reference.address !== undefined && reference.address !== -1) {
+      // 1. Push a temporary "staging" context for the inherited concept to populate
+      runner.DataStack.push({});
+      runner.Registers.ESP = runner.DataStack.length - 1;
+      runner.Registers.CSP = runner.Registers.ESP;
+
+      // 2. Save return address (the node after the link)
+      runner.ReturnStack.push(node.next as number);
+
+      // 3. Jump to the target reference!
+      runner.Registers.IP = reference.address;
+      return true;
+    }
+  }
+
   return true;
 }
 
@@ -111,27 +130,42 @@ async function handleSentinel(node: KrakoanInfo, runner: KrakoanRunner): Promise
   if (params.bodyAddr !== undefined) {
     const currentContext = runner.DataStack[runner.Registers.BSP];
     if (currentContext && Array.isArray(currentContext.__activeTriggers) && currentContext.__activeTriggers.length > 0) {
-      const activeTriggerIndex = currentContext.__activeTriggers.length - 1;
-      const activeTrigger = currentContext.__activeTriggers[activeTriggerIndex];
-
-      // Increment the counter for the active trigger
-      activeTrigger.minCounter++;
-      const maxCycles = typeof activeTrigger.maxCycles === 'number' ? activeTrigger.maxCycles : parseInt(activeTrigger.maxCycles) || 1;
-
-      if (activeTrigger.minCounter < maxCycles) {
-        // Loop continues: Jump back to the trigger's block body
-        runner.Registers.IP = params.bodyAddr;
-        return true; // Indicate that IP was manually changed
-      } else {
-        // Loop completed: Pop the active trigger and continue execution past the sentinel
-        currentContext.__activeTriggers.pop();
-        return true; // Let the runner advance IP normally
-      }
+      // Logic for Triggers is now purely linear finishing
+      // We pop the trigger and let the IP advance (or not, if it's the last trigger)
+      currentContext.__activeTriggers.pop();
+      return true;
     }
   }
 
-  // Nesting logic for structural containers could be handled here
-  // if (params.nest) { ... }
+  // Merging and returning logic for structural containers and inheritance
+  if (params.nest) {
+    if (runner.ReturnStack.length > 0) {
+      // Return from Inheritance Jump
+      const returnAddress = runner.ReturnStack.pop();
+      const inheritedData = runner.DataStack.pop();
+
+      runner.Registers.ESP = runner.DataStack.length - 1;
+      runner.Registers.CSP = runner.Registers.ESP;
+
+      if (inheritedData) {
+        const targetContext = runner.DataStack[runner.Registers.ESP];
+        if (targetContext) {
+          // Merge the populated data back into the parent
+          Object.assign(targetContext, inheritedData);
+        }
+      }
+
+      if (returnAddress !== undefined) {
+        runner.Registers.IP = returnAddress;
+      }
+      return true;
+    } else {
+      // Normal context pop for nested containers (like Concepts)
+      runner.DataStack.pop();
+      runner.Registers.ESP = runner.DataStack.length - 1;
+      runner.Registers.CSP = runner.Registers.ESP;
+    }
+  }
 
   return true;
 }

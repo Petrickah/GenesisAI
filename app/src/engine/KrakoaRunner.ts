@@ -52,13 +52,15 @@ export class KrakoanRunner {
    */
   constructor(public Program: KrakoanProgram) {
     this.registerPlugin('👤', Contextual, true);
+    this.registerPlugin('🧠', Contextual, true);
+    this.registerPlugin('📌', Contextual, false);
     this.reset();
   }
 
   /**
    * Registers a custom command handler (Plugin support).
    */
-  public registerPlugin(opcode: InstructionOpcode, handler: ExecutionHandler, isPersistent: boolean = false)  : void {
+  public registerPlugin(opcode: InstructionOpcode, handler: ExecutionHandler, isPersistent: boolean = false): void {
     this.CommandTable[opcode] = handler;
     if (isPersistent) this.PersistentOpcodes.push(opcode);
   }
@@ -148,42 +150,11 @@ export class KrakoanRunner {
    * using the program's text pool.
    * 
    * @param value - The value to decode (can be recursive).
-   * @param keyName - Optional key name to help skip pooling for instruction types.
    * @returns The decoded value.
    */
-  public decode(initialValue: any, initialKeyName?: string): any {
+  public decode(initialValue: any): any {
     if (initialValue === null || initialValue === undefined || !this.Program) return;
-
-    // We do a deep copy up front to ensure we never mutate the Program's actual IR code
-    const safeCopy = JSON.parse(JSON.stringify(initialValue));
-    const ignoreInstructions = ["λ", "📌", "➔", "🏁", "🔃"];
-
-    const _decode = (value: any, keyName?: string): any => {
-      if (value === null || value === undefined) return;
-
-      // Skip decoding for the instruction type to keep literal emojis
-      if (keyName === 'type' && typeof value === 'string') return value;
-      if (typeof value === 'number') return this.Program.text[value];
-      if (Array.isArray(value)) return value.map(item => _decode(item));
-
-      if (typeof value === 'object') {
-        if (ignoreInstructions.includes(value.type))
-          return value;
-
-        const newObject: Record<string, any> = {};
-        for (let key in value) {
-          newObject[key] = (key !== "address" && key !== "next")
-            ? _decode(value[key], key)
-            : value[key];
-        }
-
-        return newObject;
-      }
-      
-      return value;
-    };
-
-    return _decode(safeCopy, initialKeyName);
+    return JSON.parse(JSON.stringify(initialValue));
   }
 
   /**

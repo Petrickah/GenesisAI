@@ -40,8 +40,6 @@ export function k(strings: TemplateStringsArray, ...values: any[]): KrakoanProgr
 function compile(fullAST: KrakoanNode[]): KrakoanProgram {
   let firstTriggerIndex = -1;
   let instructions: KrakoanInstruction[] = [];
-  const ignoreInstructions = ["λ", "📌", "➔", "🏁", "🔃"];
-  const ignoreKinds = ["hashtag", "reference", "state"];
   const processedCode: Record<string, KrakoanInstruction> = {};
 
   /**
@@ -51,36 +49,7 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
    * @returns The fully linked and pooled KrakoanProgram.
    */
   function link(program: KrakoanProgram): KrakoanProgram {
-    const textPool: string[] = [];
     const symbolMap: Record<string, number> = {};
-
-    /**
-     * Recursively replaces strings with pool indices.
-     * Skips Lambda objects to preserve executable code.
-     */
-    function process(value: any): any {
-      if (value === undefined || value === null) return undefined;
-      if (Array.isArray(value)) return value.map(process);
-      if (typeof value === 'string') {
-        let index = textPool.indexOf(value);
-        if (index === -1) {
-          index = textPool.length;
-          textPool.push(value);
-        }
-        return index;
-      }
-      if (typeof value === 'object') {
-        if (ignoreInstructions.includes(value.type) || ignoreKinds.includes(value.kind))
-          return value;
-
-        const newObject: any = {};
-        for (let k in value) {
-          newObject[k] = (k !== 'type') ? process(value[k]) : value[k];
-        }
-        return newObject;
-      }
-      return value;
-    }
 
     /**
      * Scans instructions for hashtags to populate the global symbol map.
@@ -121,19 +90,17 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         });
       }
       if (typeof value === 'object' && value.kind === 'reference') {
-        let lastAddress = -1;
-        let lastReferenceID = value.root;
-        const processedSegments = value.segments.map((currReference: any) => {
-          const currReferenceID = typeof currReference === 'object' ? currReference.root : currReference;
-          lastReferenceID = currReferenceID;
-          lastAddress = symbolMap[currReferenceID] ?? -1;
-          return currReferenceID;
-        });
+        const fullQualifiedPath = value.segments.map((currReference: any) =>
+          typeof currReference === 'object' ? currReference.root : currReference
+        ).join('::');
+
+        const lastAddress = symbolMap[fullQualifiedPath] ?? -1;
+        const lastReferenceID = value.segments.length > 0 ? (typeof value.segments[value.segments.length - 1] === 'object' ? value.segments[value.segments.length - 1].root : value.segments[value.segments.length - 1]) : value.root;
 
         return KrakoanTagsSchema.parse({
           ...value,
-          segments: processedSegments,
-          original: `@${processedSegments.join('::')}`,
+          segments: value.segments.map((s: any) => typeof s === 'object' ? s.root : s),
+          original: `@${fullQualifiedPath}`,
           target: lastReferenceID,
           address: lastAddress
         });
@@ -157,13 +124,12 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       });
       const linkedCode = solveReference(program.code);
       for (const [addr, inst] of Object.entries(linkedCode)) {
-        processedCode[parseInt(addr)] = process(inst);
+        processedCode[parseInt(addr)] = inst as KrakoanInstruction;
       }
     }
 
     return KrakoanProgramSchema.parse({
       entry: program?.entry ?? 0,
-      text: textPool,
       symbols: symbolMap,
       code: processedCode,
     });
@@ -221,13 +187,16 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
    * 
    * Now implements Sentinel (🏁) insertion at the end of every block.
    */
-  function linearize(bodyNodes: Record<string, any>[], exitIndex?: number): void {
+  function linearize(bodyNodes: Record<string, any>[], exitIndex?: number, parentPath: string = ""): void {
     bodyNodes.forEach((activeNode, index) => {
       const currentIndex = instructions.length;
       const isLastNode = index === bodyNodes.length - 1;
 
+      const nodeId = activeNode.params.id;
+      const qualifiedId = nodeId ? (parentPath ? `${parentPath}::${nodeId}` : nodeId) : undefined;
+
       const currInstruction: KrakoanInstruction = {
-        id: activeNode.params.id,
+        id: qualifiedId,
         type: activeNode.type,
         timestamp: Date.now(),
         params: { ...activeNode.params },
@@ -252,11 +221,11 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
       let sentinelAddr: number | undefined;
       let bodyStart: number | undefined;
 
-      if (activeNode.body && activeNode.body.length > 0) {
+      if (Array.isArray(activeNode.body) && activeNode.body.length > 0) {
         bodyStart = instructions.length;
         const sentinelPlaceholder = -1;
 
-        linearize(activeNode.body, sentinelPlaceholder);
+        linearize(activeNode.body, sentinelPlaceholder, qualifiedId || parentPath);
 
         sentinelAddr = instructions.length;
         // Patch body instructions that pointed to the placeholder to point to the sentinel
@@ -279,15 +248,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
           params: sentinelParams,
           next: [] // Will be patched below
         });
-      } else if (activeNode.type === '➔') {
-        sentinelAddr = instructions.length;
-        instructions.push({
-          id: `@sentinel:${currentIndex}`,
-          type: '🏁',
-          timestamp: Date.now(),
-          params: { nest: false, bodyAddr: currentIndex }, // Trigger with no block still points back to itself or should it point back? User said: "one that points back to the trigger"
-          next: [] // Will be patched below
-        });
       }
 
       // Determine where the next instruction/sibling should be.
@@ -308,10 +268,8 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
       // Patch the current instruction's next addresses
       if (activeNode.body && activeNode.body.length > 0) {
-        if (activeNode.type === '➔') {
-          // Trigger with block
-          currInstruction.next = [bodyStart!];
-        } else if (activeNode.type === '⚓') {
+        if (activeNode.type === '➔' || activeNode.type === '⚓') {
+          // Trigger with block: [bodyStart, exitAddr]
           currInstruction.next = [bodyStart!, afterSubtreeAddr];
         } else {
           // Normal container: [bodyStart]
@@ -319,8 +277,8 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
         }
       } else {
         if (activeNode.type === '➔') {
-          // Trigger without block
-          currInstruction.next = [sentinelAddr!];
+          // Trigger without block: [exitAddr, sentinelAddr]
+          currInstruction.next = [afterSubtreeAddr, sentinelAddr!];
         } else {
           // Leaf node: [exitAddr]
           currInstruction.next = [afterSubtreeAddr];
@@ -333,6 +291,6 @@ function compile(fullAST: KrakoanNode[]): KrakoanProgram {
 
   return link(KrakoanProgramSchema.parse({
     code: { ...instructions },
-    entry: firstTriggerIndex !== -1 ? firstTriggerIndex : 0,
+    entry: 0,
   }));
 }

@@ -99,7 +99,7 @@ ParameterList
   }
 
 NumberLiteral
-  = $([0-9]+ ("." [0-9]+)?) { return parseFloat(text()); }
+  = _ $( "-"? [0-9]+ ("." [0-9]+)? ) { return parseFloat(text().trim()); }
 
 Parameter
   = _ label:Identifier ":" _ value:(NumberLiteral / Identifier / LambdaExpression) {
@@ -152,7 +152,7 @@ LambdaExpression
     const isComplex = raw.startsWith(String.fromCharCode(123));
     const finalCode = isComplex ? raw : `return ${raw};`;
     return {
-      type: "λ",
+      type: ":lambda",
       code: finalCode,
     };
   }
