@@ -1,9 +1,19 @@
+/**
+ * Krakoa Interactive REPL
+ * 
+ * Provides a command-line interface for interacting with the Krakoan engine.
+ * Supports hot-loading programs, stepping through execution, and inspecting state.
+ */
+
 import * as readline from 'readline';
 import { k } from '../engine/KrakoaCompiler.js';
 import krakoa from '../engine/KrakoaEngine.js';
 import { KrakoanRunner } from '../engine/KrakoaRunner.js';
 import type { KrakoanInstruction } from '../schema/krakoa.schema.js';
 
+/**
+ * Common code snippets for fast access in the REPL.
+ */
 const SNIPPETS: Record<string, string> = {
   ":fragment"     : "📑",
   ":concept"      : "🧠",
@@ -39,6 +49,9 @@ const SNIPPETS: Record<string, string> = {
 
 const ALIASES = Object.keys(SNIPPETS);
 
+/**
+ * Manages the interactive session between the user and the VM.
+ */
 export class KrakoaREPL {
   private buffer = "";
   private runner?: KrakoanRunner | undefined;
@@ -63,21 +76,32 @@ export class KrakoaREPL {
     });
   }
 
+  /**
+   * Starts the REPL event loop.
+   */
   public start() {
     console.log("--- 🧠 GENESIS CONSOLE MODE (REPL) ---");
     this.rl.prompt();
     this.rl.on('line', async (line) => await this.handleLine(line));
   }
 
+  /**
+   * Re-displays the current prompt.
+   */
   public prompt() {
     this.rl.prompt();
   }
 
+  /**
+   * Processes each line entered by the user.
+   * Handles multi-line input by tracking brace depth.
+   */
   private async handleLine(line: string) {
     this.buffer += line + "\n";
     const openedBraces = (this.buffer.match(/{/g) || []).length;
     const closedBraces = (this.buffer.match(/}/g) || []).length;
 
+    // Continue multi-line input if braces are unbalanced
     if (openedBraces > closedBraces) {
       this.rl.setPrompt('... ');
       return this.rl.prompt();
@@ -88,18 +112,24 @@ export class KrakoaREPL {
     this.rl.setPrompt('>>> ');
 
     if (!finalInput) return this.rl.prompt();
+    
+    // Check if input is a REPL command (.load, .step, etc.)
     if (await this.handleCommands(finalInput)) return;
     
+    // Otherwise, treat input as an ad-hoc Krakoan script
     this.runner = this.runner ?? await this.execute(finalInput);
     this.rl.prompt();
   }
 
+  /**
+   * Dispatches REPL system commands (.cmd).
+   */
   private async handleCommands(input: string): Promise<boolean> {
     const [cmd, ...args] = input.split(' ');
 
     switch (cmd) {
       case '.load':
-        await this.loadProgram(args[0]); // Încarcă un .kts
+        await this.loadProgram(args[0]);
         return true;
       case '.step':
         if (this.runner) {
@@ -126,12 +156,21 @@ export class KrakoaREPL {
     return false;
   }
 
+  /**
+   * Loads a .ksl file and initializes a new runner.
+   * @param arg0 - Path to the file.
+   */
   private async loadProgram(arg0?: string): Promise<void> {
-    if (!arg0) throw new Error("No program path has been suplied");
-    this.runner = new KrakoanRunner(await krakoa(arg0.slice(1, -1)));
+    if (!arg0) throw new Error("No program path has been supplied");
+    const programPath = arg0.slice(1, -1); // Remove quotes
+    const program = await krakoa(programPath);
+    this.runner = new KrakoanRunner(program);
     this.rl.prompt();
   }
 
+  /**
+   * Compiles and executes an ad-hoc snippet directly from the console.
+   */
   private async execute(input: string) {
     const krakoanProgram = await krakoa(/*ts*/`
       export default ${JSON.stringify(k`${input}`, null, 2)};
@@ -142,6 +181,9 @@ export class KrakoaREPL {
     }
   }
 
+  /**
+   * Step debugger view. Shows registers and instruction window.
+   */
   private async handleStep() {
     const { Program, Registers } = this.runner ?? {};
     if (!this.runner || !Program || !Registers) return;
@@ -158,6 +200,9 @@ export class KrakoaREPL {
     this.rl.prompt();
   }
 
+  /**
+   * Renders the visual debugging frame, including current context and surrounding instructions.
+   */
   private async renderDebugFrame(runner: KrakoanRunner, windowSize: number = 5) {
     const { Program, Registers, DataStack: ContextStack } = runner;
 

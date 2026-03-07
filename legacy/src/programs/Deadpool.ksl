@@ -1,13 +1,16 @@
 import { k } from '../engine/KrakoaCompiler'
 
+/**
+ * Deadpool (Wade Wilson) - Reference Implementation
+ * This script defines the core behavior, assets, and active state of the Wade Wilson agent.
+ * It demonstrates inheritance, contextual state, and reactive logic (anchors).
+ */
 export default k/*ts*/`
 🧠("NEX-CON_RESL", name: "Absurd Overdrive") 🔑 [#PsychologicalBuffer, #MetaHumor, #ChaosDefense] {
   ➔ 🧬("Logic", description: "Damage control via reality detachment.");
-  🔗("NEX-CON_RESL-RETURN", mode: "Return");
   🔓("NEX-AST-WADE_GEAR", name: "Wade's Gear") 🔑 [#Weaponry, #TeleportationDevice] {
     🩺("Utility", status: "READY", description: "Eliminating bureaucracy via fast repositioning.");
     💉("Bypass Bureaucracy", description: "Fast repositioning via teleportation");
-    🔗("NEX-AST-WADE_GEAR-RETURN", mode: "Return");
   };
   👤("WADE_BASE", name: "Wade Wilson") 🔑 [#MercWithAMouth, #HealingFactor, #AnvilSlayer] {
     📌("MaxHealth", value: λ(150));
@@ -15,10 +18,10 @@ export default k/*ts*/`
     📑("WADE-FRG-META", name: "Meta Commentary") {
       📂("Chimichanga Optimized", content: "Hey, Architect! Don't forget about the bug! They are little design suprises.");
     };
-    🔗("WADE_BASE-RETURN", mode: "Return");
   };
 };
 
+// ➔ 👤 (ACTIVE TRIGGER): Spawns the specific Wade Agent instance.
 ➔ 👤("NEX-AGT_WADE") {
   ➔ 🔗("NEX-AGT_WADE-EXTEND", mode: "Inheritance") 🔑 [
     @"NEX-CON_RESL",
@@ -28,23 +31,23 @@ export default k/*ts*/`
   📌("Health", value: λ(ctx["MaxHealth"]));
   📌("Current Logic", value: "Neutral Chaos");
   📌("Active Equipment", value: λ(ctx["NEX-AST-WADE_GEAR"]));
+
   🛡️("Obiectiv Securizat", level: "High", description: "Supravegheat de Stepford Cuckoos și Magneto.");
   ➔ 🧬("Healing Factor", mode: "Passive") {
     ⚓ ("Health Check", condition: λ(ctx["Health"] < 50)) {
       🚀("Regenerate Health", power: "Auto");
     };
-    🔗("Healing Factor Done", mode: "Return");
   };
+
   ⚓("Psychological Buffer", condition: λ(ctx["Tags"]["PsychologicalBuffer"])) {
     🧬("Mode", mode: "STABILITY", description: "The acceptance of system defects.");
     📡("Meta Awareness", target: "System");
+    
     ➔ 💬("Fourth Wall Breach", to: "Architect") {
       🎭("Jesting", breakWall: "true");
-      📂("Message", content: λ(cts["Chimichanga Optimized"]));
-      🔗("Speech Done", mode: "Return");
+      📂("Message", content: λ(ctx["Chimichanga Optimized"]));
     };
     ➔ 🔃("Jump to Psychological Buffer", goto: "Psychological Buffer") 🔑 [@"NEX-AGT_WADE"::"Psychological Buffer"];
   };
-  🔗("NEX-AGT_WADE-RETURN", mode: "Return");
 };
 `;

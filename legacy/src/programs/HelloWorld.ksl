@@ -1,0 +1,19 @@
+import { k } from '../engine/KrakoaCompiler.js';
+
+/**
+ * HelloWorld.ksl
+ * A minimalist Krakoan program to test Trigger, Inheritance, and Speech.
+ */
+export default k/*ts*/`
+🧠("NEX-LIB_MSG", name: "System Lexicon") {
+  📌("Greeting", value: "Hello World!");
+};
+➔ 👤("NEX-AGT_HELLO") {
+  ➔ 🔗("IMPORT_MSG", mode: "Inheritance") 🔑 [
+    @"NEX-LIB_MSG"
+  ];
+  ➔ 💬("Announce", to: "Architect") {
+    📂("Message", content: λ(ctx["Greeting"]));
+  };
+};
+`;

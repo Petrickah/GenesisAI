@@ -28,7 +28,7 @@
 
   function buildReference(symbol, kind, root, members) {
     const path = solveOriginalReference(members);
-    const finalPath = path ? `::"${path}"` : '';
+    const finalPath = path ? `::${path}` : '';
     return {
       root: root,
       kind: kind,
@@ -40,12 +40,12 @@
     };
   }
 
-  function buildNode(type, body, tags, params) {
+  function buildNode(type, body = [], tags = [], params = {}) {
     return {
-      type,
-      body,
-      tags,
-      params,
+      type: String(type),
+      params: params,
+      body: body,
+      tags: tags,
     };
   }
 }}
@@ -98,8 +98,11 @@ ParameterList
     return params;
   }
 
+NumberLiteral
+  = _ $( "-"? [0-9]+ ("." [0-9]+)? ) { return parseFloat(text().trim()); }
+
 Parameter
-  = _ label:Identifier ":" value:(Identifier / LambdaExpression) {
+  = _ label:Identifier ":" _ value:(NumberLiteral / Identifier / LambdaExpression) {
     return { [label]: value }
   }
 
