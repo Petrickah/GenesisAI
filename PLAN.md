@@ -1,111 +1,50 @@
-# 🧬 GenesisAI Development Roadmap (Genesis Phase)
+# 🧬 GenesisAI: Strategic Roadmap (The Identity Phase)
 
-This document outlines the current state of the GenesisAI framework and the strategic plan for the upcoming development cycles.
+This document outlines the evolution of the GenesisAI framework, moving from a complex VM-based execution to a streamlined **Identity Matrix & Behavior Tree** architecture.
 
-## 📊 Current State: Phase 1 (Ingestion & Architecture)
-
-As of late February 2026, the core infrastructure of the Krakoa Nexus DSL is operational.
+## 📊 Current State: Phase 1 (Parser & Logic Foundation)
+The core grammar and semantic parsing of the Krakoa Nexus DSL are fully operational.
 
 ### ✅ Completed Milestones
-
 - **DSL Grammar (`Peggy.js`)**: Lexicon and semantic token parsing are finalized.
-- **Compiler (`KrakoaCompiler.ts`)**: AST to IR transformation, including symbol mapping and reference linking, is stable.
-- **Runner/VM (`KrakoaRunner.ts`)**: Register-based VM capable of executing instructions and handling execution contexts.
-- **Eager Lambda Evaluation**: Centralized `KrakoaEvaluator` with recursive stack lookup and eager parameter resolution.
-- **Inheritance Logic (🔗)**: Fully implemented "Bumerang" logic with proactive data absorption and symbol mapping.
-- **State Management (📌)**: Eagerly evaluated state pins are now integrated into the context stack.
-- **Interactive REPL**: Debugger window, step-through execution, and snippet support are available.
-- **Hot-Reloading Environment**: `tsx` and `chokidar` integrated for rapid development cycles.
-- **Reference Script Implementation**: Successfully executed `Deadpool.ksl` with complex inheritance and fragment extraction.
-
-### 🏗️ In Progress
-
-- **Opcode Expansion**: Implementing the remaining logic for `⚓` (Anchor) and `🔃` (Jump). Currently, `➔` (Trigger), `👤` (Entity), `🧠` (Concept), `🧬` (Logic), `📌` (State), `🔗` (Inheritance), and `💬`/`📡` (Speech/Signal) are fully operational.
-- **VM Refinement**: The register-based execution model and stack frame management (including the `__isExecuting` implicit return logic) are finalized and validated.
-- **Semantic Validation**: Deep reference checking in the compiler is active and has been validated through the Deadpool reference implementation.
+- **AST Generation**: Successfully transforming `.ksl` scripts into structured JSON trees.
+- **Legacy VM Research**: Proved that a register-based VM is over-engineered for LLM orchestration; lessons learned are now being distilled into the Transpiler.
 
 ---
 
-## 🗺️ The Next Frontier: Strategic Roadmap
+## 🗺️ The New Frontier: Strategic Roadmap
 
-### Phase 2: The Ledger (Week 3 - Database & Persistence)
+### Phase 2: The Identity Matrix (Week 3 - Transpilation)
+*Goal: Transform ASTs into dense, structured JSON Bulletins for LLM Anchoring.*
 
-*Goal: Transform ephemeral execution into persistent graph-based knowledge.*
-
-1. **SurrealDB Integration**:
-   - [ ] Deploy SurrealDB via Docker.
-   - [ ] Establish an active connection between the `KrakoaRunner` and SurrealDB.
-2. **Graph Linking Logic**:
-   - [ ] Implement `🔗` (Inheritance) directly in SurrealQL to allow dynamic property inheritance at the database level.
-   - [ ] Map `👤` (Entity) and `🧠` (Concept) nodes to persistent SurrealDB records.
-3. **The "Ledger" Implementation**:
-   - [ ] Store every execution state and relationship in a Vector Knowledge Database.
-   - [ ] Implement "Ancestral Retrieval": Fetching an agent's traits by traversing its inheritance graph.
+1. **The Flattener (Transpiler)**:
+   - [ ] Implement `KrakoaTranspiler.ts` to convert recursive ASTs into linear "Identity Matrices".
+   - [ ] Implement **Behavior Tree (BT)** traversal logic: Evaluating `⚓` (Anchors) as guards for branch execution.
+2. **Deterministic Identity**:
+   - [ ] Define the JSON schema for "Agent Identity" (Traits, Logic, Stance).
+   - [ ] Implement `🔗` (Inheritance) as a **Deep Merge** operation during transpilation.
 
 ### Phase 3: The Intelligence (Week 4 - AI Orchestration)
+*Goal: Bridge the Identity Matrix with local LLM (Ollama) execution.*
 
-*Goal: Bridge the DSL IR with LLM execution.*
+1. **Identity Injection**:
+   - [ ] Develop System Prompts that treat the Identity Matrix as the "Source of Truth" (SSOT).
+   - [ ] Test **Contextual Anchoring** to ensure Ollama stays in character within 8k context windows.
+2. **Behavioral Ticks**:
+   - [ ] Implement the "Tick" cycle: The AI evaluates its logic tree before generating a response.
 
-1. **System Prompt Engineering**:
-   - [ ] Develop "Master Prompts" that instruct the LLM to interpret the DSL's Intermediate Representation (IR).
-   - [ ] Define the output schema for LLMs to respond in JSON objects mapping back to the DSL logic.
-2. **Closed-Loop Interaction**:
-   - [ ] Implement the `Prompt -> DSL IR -> Context RAG -> Answer` loop.
-   - [ ] Test multi-agent interaction using the "Quiet Council" protocol (consensus-based synthesis).
-3. **Local LLM Integration**:
-   - [ ] Fully utilize the `ollama` dependency to run models locally, ensuring data privacy and "Semantical Determinism".
+### Phase 4: The Ledger (Beyond Week 4 - Persistence)
+*Goal: Store identities as persistent nodes in a Knowledge Graph.*
 
-### Phase 4: The Librarian (Beyond Week 4 - Advanced RAG)
-
-*Goal: Multimodal ingestion and automated lore governance.*
-
-1. **Multimodal Pipeline**:
-   - [ ] Integrate `Docling` for hierarchical PDF/HTML ingestion into the Knowledge Vault.
-   - [ ] Implement the `:ingest` command for dynamic web acquisition (Browserless/Puppeteer).
-2. **Contextual Anchoring**:
-   - [ ] Fine-tune the "Deterministic Fetch" logic where the VM triggers semantic searches based on `⚓` (Anchor) conditions.
-3. **Reality Anchors Validation**:
-   - [ ] Implement automated checks to ensure LLM outputs do not violate the "Immutable Logic" defined in the Krakoan scripts.
-4. **System Prompt Writing**:
-   - [ ] Write the System Prompts for adapting LLM answers.
-5. **Scalability Assessment**:
-   - [ ] Evaluating the migration to a Monorepo (TurboRepo) to separate the Core Engine from the CLI and future Dashboards.
+1. **SurrealDB Integration**:
+   - [ ] Map Entities and Concepts to SurrealDB Graph nodes.
+   - [ ] Implement "Identity Retrieval": Fetching an agent's pre-compiled JSON matrix from the database.
+2. **Lore Governance**:
+   - [ ] Use the Vector Database to provide real-time RAG updates to the Identity Matrix.
 
 ---
 
-## 🗺️ One month Roadmap (The Genesis Phase)
-
-### **1st Week: Defining the lexicon and grammar**
-
-- [x] Configuring the development environment (Node.js + TypeScript + Docker + Ollama)
-- [x] Finalizing the DSL Specification (The Cypher Codex)
-- [x] Implementing the parser using a Pushdown Automaton (PDA/PEG/Peggy.js) using TypeScript.
-
-### **2nd Week: The Parsing Engine (The Compiler)**
-
-- [x] Compiling the tokens into JSON structured objects for a runner.
-- [x] The syntactic validation of the `.ksl` scripts.
-- [/] Building the Virtual Machine for executing Krakoan Scripts (Core operational, but opcodes are still in development).
-
-### **3rd Week: Integrating with a Vector Knowledge Database (The Ledger)**
-
-- [ ] Building the active connection between the Parser and the Database.
-- [ ] Implementing the "Inheritance" logic and "Graph Linking" directly into SurrealQL.
-- [ ] Testing the first complex entities (Anran & Wuyang) with persistent relationships.
-
-### **4th Week: AI Interface (The Intelligence)**
-
-- [ ] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to adapt their answers based on the Krakoa Nexus DSL definitions.
-- [ ] Writing the "System Prompts" and "Master Prompts" to instruct the LLM to write JSON Objects based on the Intermediate Representation (IR) of Krakoa Nexus DSL.
-- [ ] Testing the first close loop: Prompt -> DSL IR -> Context RAG -> Answer.
-- [ ] Testing the first interaction with an AI Agent.
-
----
-
-## 🛠️ Immediate Next Steps (Action Items)
-
-- [ ] **VM Opcodes**: Implement execution logic for `📌` (State), `⚓` (Anchor), `🔃` (Jump), and full `🔗` (Inheritance).
-- [ ] **Persistence**: Initialize the `docker-compose.yml` with SurrealDB and update `package.json` scripts for DB migration.
-- [x] **Documentation**: Update the Cypher Codex and document the core engine/scripts.
-- [x] **Watcher Fix**: Correct the file extension logic in `KrakoaWatcher.ts`.
-- [x] **Core Documentation**: Add JSDoc to compiler, runner, engine, and opcodes.
+## 🛠️ Immediate Next Steps
+- [ ] **Scrap Legacy VM**: Archive `KrakoaRunner.ts` and focus on `KrakoaTranspiler.ts`.
+- [ ] **Identity Prototype**: Create the first "Identity Bulletin" for `Deadpool.ksl`.
+- [ ] **Ollama Benchmarking**: Verify if JSON-density prevents "Narrative Drift" in 8B models.
